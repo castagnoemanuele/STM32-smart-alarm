@@ -24,6 +24,7 @@
 #include "mxconstants.h"
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -109,8 +110,7 @@ int main(void) {
 
 	/*Configure SSD1306*/
 	ssd1306_Init();
-	ssd1306_Fill(White);
-	ssd1306_UpdateScreen();
+	DisplayBootMessage();
 	/*Configure GPIO pin : BUTTON_PIN (blue pushbutton)*/
 	GPIO_InitStruct.Pin = BUTTON_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; /* Try also rising */
@@ -131,6 +131,7 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	uint32_t start_time = 0;
+	bool toggle = 0;
 	while (1) {
 		if (alarm_flag) {
 			// If it's the first time entering, store the current timestamp
@@ -141,12 +142,31 @@ int main(void) {
 			// If less than 5 seconds have passed, keep blinking
 			if (HAL_GetTick() - start_time < ALARM_DURATION_MS) {
 				HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN); // Toggle buzzer or LED
-				HAL_Delay(200); // Delay for 200 ms between toggles
+				//Oled Warning
+				if (toggle == 0) {
+					ssd1306_Fill(White);
+
+					ssd1306_SetCursor(35, 26); // Adjust as needed for centering
+					ssd1306_WriteString("ALARM!", Font_7x10, Black);
+					ssd1306_UpdateScreen();
+				}
+				if (toggle == 1) {
+					ssd1306_Fill(Black);
+
+					ssd1306_SetCursor(35, 26); // Same position, different ink
+					ssd1306_WriteString("ALARM!", Font_7x10, White);
+					ssd1306_UpdateScreen();
+				}
+				toggle = !toggle;
+				HAL_Delay(100); // Delay for 100 ms between toggles
 			} else {
 				alarm_flag = 0; // Reset the alarm flag
 				start_time = 0; // Reset the timer for the next alarm
 				HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_RESET); // Make sure the pin is LOW
+				ssd1306_Fill(Black); //reset the screen
+				ssd1306_UpdateScreen();
 			}
+
 		}
 	}
 	/* USER CODE END WHILE */
@@ -306,6 +326,34 @@ void EXTI15_10_IRQHandler(void) {
 		__HAL_GPIO_EXTI_CLEAR_IT(BUTTON_PIN);
 		alarm_flag = 1;
 	}
+}
+
+// Boot Message Display Function
+void DisplayBootMessage(void) {
+    // Clear screen (black background)
+    ssd1306_Fill(Black);
+
+    // Welcome title
+    ssd1306_SetCursor(10, 10);
+    ssd1306_WriteString("Smart Alarm System", Font_7x10, White);
+
+    // Booting line
+    ssd1306_SetCursor(30, 30);
+    ssd1306_WriteString("Booting up...", Font_6x8, White);
+
+    ssd1306_UpdateScreen();
+    HAL_Delay(1500);  // Dramatic pause
+
+    // Flash to white background, black text
+    ssd1306_Fill(White);
+    ssd1306_SetCursor(30, 26);
+    ssd1306_WriteString("System Ready", Font_7x10, Black);
+    ssd1306_UpdateScreen();
+    HAL_Delay(1000);
+
+    // Clear again to prepare for runtime display
+    ssd1306_Fill(Black);
+    ssd1306_UpdateScreen();
 }
 /* USER CODE END 4 */
 
