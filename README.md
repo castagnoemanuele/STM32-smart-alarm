@@ -1,16 +1,134 @@
-# STM32-smart-alarm
-Smart alarm security system based on STM32 as the main microcontroller. Interfaced with an ESP32 for wifi communication.
+# STM32-Smart-Alarm
+
+Smart alarm security system based on STM32 as the main microcontroller. It is interfaced with an ESP32 for WiFi communication.
+
+## Introduction
+
+This project is a smart alarm system designed to enhance home or office security. The system utilizes an STM32 microcontroller in conjunction with various sensors and modules to detect unauthorized access and notify users over WiFi. Features include keypad entry, RFID authentication, motion detection, and more.
 
 ## Components
-- STM32 Nucleo-64 development board
-- Wemos ESP32 S2 mini board
-- I2C Oled Display
-- 4x4 Numpad Array
-- Reed switch sensor board
-- RC522 RFID module
-- HC-SR501 IR sensor
-- Active buzzer
 
-## Libraries used
-- https://github.com/afiskon/stm32-ssd1306
-- https://github.com/tzapu/WiFiManager
+The following hardware components are used in this project:
+- **STM32 Nucleo-64 development board**: Main microcontroller.
+- **Wemos ESP32 S2 mini board**: Handles WiFi communication.
+- **I2C OLED Display**: Displays system status and prompts.
+- **4x4 Numpad Array**: For PIN code entry.
+- **Reed switch sensor board**: Detects door or window openings.
+- **RC522 RFID module**: Provides RFID authentication.
+- **HC-SR501 IR sensor**: Detects motion.
+- **Active buzzer**: Alerts users with an audible alarm.
+
+## To Do
+
+### Hardware:
+- [ ] Create and upload the schematic for hardware connections.
+- [ ] Test and validate all hardware components.
+- [ ] Build a prototype shield that hosts ESP32 and I2C display on top of the STM32
+
+### Firmware - STM32:
+- [ ] Initialize display
+- [ ] Implement alarm function (Sound + Light)
+- [ ] Implement RFID authentication logic.
+- [ ] Implement Reed switch control via interrupt
+- [ ] Add support for multiple PIN codes (saving to EEPROM?).
+- [ ] Integrate motion sensor functionality.
+- [ ] Implement connection via Serial with the ESP32
+
+
+### Firmware - ESP32:
+- [x] Implement WiFi Connection
+- [ ] Develop a feature to send notifications via WiFi.
+
+### Possible Future Enhancements:
+- [ ] Add a mobile app for remote control.
+- [ ] Integrate a camera module for visual monitoring.
+- [ ] Expand compatibility with other microcontroller boards.
+
+
+## Libraries Used
+
+This project makes use of the following open-source libraries:
+- [STM32 SSD1306 library](https://github.com/afiskon/stm32-ssd1306): For interfacing with the OLED display.
+- [WiFiManager](https://github.com/tzapu/WiFiManager): Simplifies WiFi connectivity setup.
+
+## Installation and Setup
+
+### Prerequisites
+- Install STM32CubeIDE or your preferred STM32 development environment.
+- Install the Arduino IDE for programming the ESP32.
+- Ensure you have all the necessary hardware components.
+
+### Steps
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/castagnoemanuele/STM32-smart-alarm.git
+   cd STM32-smart-alarm
+   ```
+
+2. **Hardware Setup**:
+   - Connect all components as per the provided schematic (to be added).
+   - Ensure proper power supply and secure connections.
+
+3. **Flashing the STM32**:
+   - Open the project in STM32CubeIDE.
+   - Compile the source code and flash it to the STM32 Nucleo-64 board.
+
+4. **Flashing the ESP32**:
+   - Open the ESP32 code in Arduino IDE.
+   - Compile and upload the code to the ESP32 S2 mini board.
+
+5. **WiFi Configuration**:
+   - When powered on, the ESP32 will start in AP mode.
+   - Connect to the ESP32 via the provided WiFiManager interface to configure your WiFi credentials.
+
+## Usage
+
+- Enter the PIN code on the keypad to arm or disarm the alarm system.
+- Use the RFID module to authenticate authorized users.
+- The system will trigger the buzzer if unauthorized access is detected via reed switches or motion sensors.
+- Monitor system status on the OLED display.
+
+## Architecture
+
+The smart alarm system is divided into two main components:
+1. **STM32 Microcontroller**:
+   - Handles sensor inputs, alarm logic, and display control.
+2. **ESP32 WiFi Module**:
+   - Manages network communication and sends notifications.
+
+A detailed schematic and workflow diagram will be added in future updates.
+
+## To Do
+
+### Hardware:
+- [ ] Create and upload the schematic for hardware connections.
+- [ ] Test and validate all hardware components.
+- [ ] Build a prototype shield that hosts ESP32 and I2C display on top of the STM32
+
+### Firmware - STM32:
+- [ ] Initialize display
+- [ ] Implement alarm function (Sound + Light)
+- [ ] Implement RFID authentication logic.
+- [ ] Implement Reed switch control via interrupt
+- [ ] Add support for multiple PIN codes (saving to EEPROM?).
+- [ ] Integrate motion sensor functionality.
+- [ ] Implement connection via Serial with the ESP32
+
+
+### Firmware - ESP32:
+- [x] Implement WiFi Connection
+- [ ] Develop a feature to send notifications via WiFi.
+
+### Possible Future Enhancements:
+- [ ] Add a mobile app for remote control.
+- [ ] Integrate a camera module for visual monitoring.
+- [ ] Expand compatibility with other microcontroller boards.
+
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Acknowledgments
+
+Special thanks to the authors of the open-source libraries and the community for their valuable contributions.
