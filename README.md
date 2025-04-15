@@ -18,6 +18,16 @@ The following hardware components are used in this project:
 - **HC-SR501 IR sensor**: Detects motion.
 - **Active buzzer**: Alerts users with an audible alarm.
 
+## Architecture
+
+The smart alarm system is divided into two main components:
+1. **STM32 Microcontroller**:
+   - Handles sensor inputs, alarm logic, and display control.
+2. **ESP32 WiFi Module**:
+   - Manages network communication and sends notifications.
+
+A detailed schematic and workflow diagram will be added in future updates.
+
 ## To Do
 
 ### Hardware:
@@ -87,43 +97,6 @@ This project makes use of the following open-source libraries:
 - Use the RFID module to authenticate authorized users.
 - The system will trigger the buzzer if unauthorized access is detected via reed switches or motion sensors.
 - Monitor system status on the OLED display.
-
-## Architecture
-
-The smart alarm system is divided into two main components:
-1. **STM32 Microcontroller**:
-   - Handles sensor inputs, alarm logic, and display control.
-2. **ESP32 WiFi Module**:
-   - Manages network communication and sends notifications.
-
-A detailed schematic and workflow diagram will be added in future updates.
-
-## To Do
-
-### Hardware:
-- [ ] Create and upload the schematic for hardware connections.
-- [ ] Test and validate all hardware components.
-- [ ] Build a prototype shield that hosts ESP32 and I2C display on top of the STM32
-
-### Firmware - STM32:
-- [ ] Initialize display
-- [ ] Implement alarm function (Sound + Light)
-- [ ] Implement RFID authentication logic.
-- [ ] Implement Reed switch control via interrupt
-- [ ] Add support for multiple PIN codes (saving to EEPROM?).
-- [ ] Integrate motion sensor functionality.
-- [ ] Implement connection via Serial with the ESP32
-
-
-### Firmware - ESP32:
-- [x] Implement WiFi Connection
-- [ ] Develop a feature to send notifications via WiFi.
-
-### Possible Future Enhancements:
-- [ ] Add a mobile app for remote control.
-- [ ] Integrate a camera module for visual monitoring.
-- [ ] Expand compatibility with other microcontroller boards.
-
 
 ## License
 
