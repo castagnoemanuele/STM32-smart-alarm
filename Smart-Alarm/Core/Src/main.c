@@ -24,7 +24,8 @@
 #include "mxconstants.h"
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
-#include <stdbool.h>
+#include "stdbool.h"
+#include "flashMemory.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,6 +36,7 @@
 #define BUTTON_PIN         GPIO_PIN_13
 #define BUZZER_PIN         GPIO_PIN_10
 #define LD2_PIN            LD2_Pin
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -87,6 +89,7 @@ int main(void) {
 
 	/* USER CODE BEGIN Init */
 
+
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
@@ -126,6 +129,22 @@ int main(void) {
 
 	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+	//Write a string to memory
+
+	uint32_t data = 10000000; //test data
+
+	//SaveToFlash(data, Address1); enable to save a new value
+	uint32_t value = ReadFromFlash(address1);
+
+	char str[12];  // max per 32-bit unsigned int (10 cifre + '\0')
+
+	sprintf(str, "%lu", (unsigned long)value); //convert int to string for printing
+
+	ssd1306_SetCursor(35, 26); // Adjust as needed for centering
+	ssd1306_WriteString(str, Font_7x10, White);
+	ssd1306_UpdateScreen();
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -355,6 +374,10 @@ void DisplayBootMessage(void) {
     ssd1306_Fill(Black);
     ssd1306_UpdateScreen();
 }
+
+
+
+
 /* USER CODE END 4 */
 
 /**

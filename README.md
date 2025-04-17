@@ -36,17 +36,20 @@ A detailed schematic and workflow diagram will be added in future updates.
 - [ ] Build a prototype shield that hosts ESP32 and I2C display on top of the STM32
 
 ### Firmware - STM32:
-- [ ] Initialize display
+- [x] Initialize display
+- [x] Add support for multiple PIN codes (saving to FLASH).
+- [ ] Implement Pin Setting procedure
+- [ ] Display current informations on display function
 - [ ] Implement alarm function (Sound + Light)
 - [ ] Implement RFID authentication logic.
 - [ ] Implement Reed switch control via interrupt
-- [ ] Add support for multiple PIN codes (saving to EEPROM?).
 - [ ] Integrate motion sensor functionality.
 - [ ] Implement connection via Serial with the ESP32
 
 
 ### Firmware - ESP32:
 - [x] Implement WiFi Connection
+- [x] Send IP/wifi information to STM32
 - [ ] Develop a feature to send notifications via WiFi.
 
 ### Possible Future Enhancements:
