@@ -1,24 +1,20 @@
-#define SDA_PIN 18
-#define SCL_PIN 16
-
+#define SDA_PIN 35
+#define SCL_PIN 33
 
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 #include <Arduino.h>
 #include <Wire.h>
 
-
-
-
+void requestEvent();
 
 void setup() {
     /////////////////////SERIAL///////////////////////
     Serial.begin(115200);
     ///////////////////////I2C///////////////////////
     Wire.begin(SDA_PIN, SCL_PIN); // SDA, SCL
-
+    Wire.begin(0x0C); // Specify I2C address
+    Wire.onRequest(requestEvent); // Register request event handler
     
-
-
     ///////////////////////PINS///////////////////////
     pinMode(LED_BUILTIN, OUTPUT); // initialize LED digital pin 15 as an output
     
@@ -106,3 +102,8 @@ void loop() {
     }
 
 }
+
+void requestEvent() {
+    Wire.write("Hello voidloop"); // respond with message of  14 bytes
+    // as expected by master
+  }
