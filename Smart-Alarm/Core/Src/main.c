@@ -61,7 +61,8 @@ UART_HandleTypeDef huart2;
 volatile uint8_t alarm_flag = 0;
 
 #define data_size 14
-uint8_t i2c_addr = 0x0c;
+uint8_t i2c_addr = 0x5c;
+
 char rx_data[data_size];
 /* USER CODE END PV */
 
@@ -77,6 +78,12 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// Redirect printf to UART
+int __io_putchar(int ch) {
+    HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+    return ch;
+}
+
 
 /* USER CODE END 0 */
 
@@ -159,58 +166,45 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+	printf("COnfiguration Completed. Starting Loop");
+
+
 	uint32_t start_time = 0;
 	bool toggle = 0;
 	while (1) {
-		if (alarm_flag) {
-			// If it's the first time entering, store the current timestamp
-			if (start_time == 0) {
-				start_time = HAL_GetTick(); // Save the start time (in ms)
-			}
+	        if (alarm_flag) {
+	            if (start_time == 0) start_time = HAL_GetTick();
+	            if (HAL_GetTick() - start_time < ALARM_DURATION_MS) {
+	                HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
+	                ssd1306_Fill(toggle ? Black : White);
+	                ssd1306_SetCursor(35, 26);
+	                ssd1306_WriteString("ALARM!", Font_7x10, toggle ? White : Black);
+	                ssd1306_UpdateScreen();
+	                toggle = !toggle;
+	                HAL_Delay(100);
+	            } else {
+	                alarm_flag = 0;
+	                start_time = 0;
+	                HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_RESET);
+	                ssd1306_Fill(Black);
+	                ssd1306_UpdateScreen();
+	            }
+	        } else {
+	            if (HAL_OK == HAL_I2C_Master_Receive(&hi2c1, (i2c_addr << 1), (uint8_t*)rx_data, data_size - 1, HAL_MAX_DELAY)) {
+	                rx_data[data_size - 1] = '\0';
+	                printf("\nReceived: %s\n", rx_data);
+	                ssd1306_SetCursor(35, 26);
+	                ssd1306_WriteString("RECEIVED!", Font_7x10, White);
+	                ssd1306_UpdateScreen();
+	                HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
+	                HAL_Delay(100);
+	            } else {
+	                printf("\nFailed to connect \n");
+	            }
 
-			// If less than 5 seconds have passed, keep blinking
-			if (HAL_GetTick() - start_time < ALARM_DURATION_MS) {
-				HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN); // Toggle buzzer or LED
-				//Oled Warning
-				if (toggle == 0) {
-					ssd1306_Fill(White);
-
-					ssd1306_SetCursor(35, 26); // Adjust as needed for centering
-					ssd1306_WriteString("ALARM!", Font_7x10, Black);
-					ssd1306_UpdateScreen();
-				}
-				if (toggle == 1) {
-					ssd1306_Fill(Black);
-
-					ssd1306_SetCursor(35, 26); // Same position, different ink
-					ssd1306_WriteString("ALARM!", Font_7x10, White);
-					ssd1306_UpdateScreen();
-				}
-				toggle = !toggle;
-				HAL_Delay(100); // Delay for 100 ms between toggles
-			} else {
-				alarm_flag = 0; // Reset the alarm flag
-				start_time = 0; // Reset the timer for the next alarm
-				HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_RESET); // Make sure the pin is LOW
-				ssd1306_Fill(Black); //reset the screen
-				ssd1306_UpdateScreen();
-			}
-
-		}
-
-		if( HAL_OK == (HAL_I2C_Master_Receive(&hi2c1, (i2c_addr << 1), (uint8_t*)rx_data, data_size, HAL_MAX_DELAY)))
-			  {
-				  printf("Received: %s\n", rx_data);
-				  ssd1306_SetCursor(35, 26); // Same position, different ink
-				  ssd1306_WriteString("RECEIVED!", Font_7x10, White);
-				  ssd1306_UpdateScreen();
-			  }
-			  else
-			  {
-				  printf("Failed to connect\n");
-			  }
-			  HAL_Delay(500);
-	}
+	            HAL_Delay(500);
+	        }
+	    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
