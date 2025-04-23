@@ -27,11 +27,12 @@ The smart alarm system is divided into two main components:
    - Manages network communication and sends notifications.
 
 A detailed schematic and workflow diagram will be added in future updates.
+![Wiring](Assets/wiring.png)
 
 ## To Do
 
 ### Hardware:
-- [ ] Create and upload the schematic for hardware connections.
+- [x] Create and upload the schematic for hardware connections.
 - [ ] Test and validate all hardware components.
 - [ ] Build a prototype shield that hosts ESP32 and I2C display on top of the STM32
 
