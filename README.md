@@ -101,6 +101,9 @@ This project makes use of the following open-source libraries:
 - The system will trigger the buzzer if unauthorized access is detected via reed switches or motion sensors.
 - Monitor system status on the OLED display.
 
+## Notes
+- The standard <wire.h> library gave us many problems when using the esp32 as a slave devicce on the i2c bus. Changing the <Wire.h> to the standard <drivers/i2c.h> solved these problems.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
