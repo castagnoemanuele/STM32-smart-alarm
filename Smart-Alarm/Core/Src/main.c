@@ -34,6 +34,11 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 #define ALARM_DURATION_MS 5000
+#define PINCODE_LENGTH 4
+#define MAX_PIN_ATTEMPTS 3
+#define LOCKOUT_TIME_MS 30000
+#define KEY_DEBOUNCE_MS 200
+#define data_size 14
 
 /* Pin Definitions */
 #define BUTTON_PIN         GPIO_PIN_13
@@ -56,16 +61,8 @@
 #define COL_PORT   GPIOC
 
 // Keypad matrix definition
-const char keypad[4][4] = {
-    {'1', '2', '3', 'A'},
-    {'4', '5', '6', 'B'},
-    {'7', '8', '9', 'C'},
-    {'*', '0', '#', 'D'}
-};
-
-#define PINCODE_LENGTH 4
-#define MAX_PIN_ATTEMPTS 3
-#define LOCKOUT_TIME_MS 30000
+const char keypad[4][4] = { { '1', '2', '3', 'A' }, { '4', '5', '6', 'B' }, {
+		'7', '8', '9', 'C' }, { '*', '0', '#', 'D' } };
 
 /* USER CODE END PTD */
 
@@ -91,9 +88,8 @@ volatile uint8_t alarm_flag = 0;
 volatile uint8_t key_pressed = 0;
 char last_key = '\0';
 uint32_t last_key_time = 0;
-#define KEY_DEBOUNCE_MS 200
 
-char entered_pincode[PINCODE_LENGTH + 1] = {0};
+char entered_pincode[PINCODE_LENGTH + 1] = { 0 };
 uint8_t pincode_position = 0;
 uint8_t pin_attempts = 0;
 uint32_t lockout_start = 0;
@@ -105,7 +101,6 @@ uint8_t Space[] = " - ";
 uint8_t StartMSG[] = "Starting I2C Scanning: \r\n";
 uint8_t EndMSG[] = "Done! \r\n\r\n";
 
-#define data_size 14
 uint8_t i2c_addr = 0x5c;
 
 char rx_data[data_size];
@@ -121,11 +116,6 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
-static void MX_USART2_UART_Init(void);
-static void MX_I2C1_Init(void);
 int ScanI2CDevices(void);
 bool is_valid_ip(const char *ip);
 char scan_keypad(void);
@@ -147,707 +137,712 @@ void StopAlarm(void);
 /* USER CODE BEGIN 0 */
 // Redirect printf to UART
 int __io_putchar(int ch) {
-    HAL_UART_Transmit(&huart2, (uint8_t*) &ch, 1, HAL_MAX_DELAY);
-    return ch;
+	HAL_UART_Transmit(&huart2, (uint8_t*) &ch, 1, HAL_MAX_DELAY);
+	return ch;
 }
 
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-    /* USER CODE BEGIN 1 */
-    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-    uint8_t i = 0, ret;
-    /* USER CODE END 1 */
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
+	/* USER CODE BEGIN 1 */
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	uint8_t i = 0, ret;
+	/* USER CODE END 1 */
 
-    /* MCU Configuration--------------------------------------------------------*/
+	/* MCU Configuration--------------------------------------------------------*/
 
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-    HAL_Init();
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-    /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 
-    /* USER CODE END Init */
+	/* USER CODE END Init */
 
-    /* Configure the system clock */
-    SystemClock_Config();
+	/* Configure the system clock */
+	SystemClock_Config();
 
-    /* USER CODE BEGIN SysInit */
+	/* USER CODE BEGIN SysInit */
 
-    /* USER CODE END SysInit */
+	/* USER CODE END SysInit */
 
-    /* Initialize all configured peripherals */
-    MX_GPIO_Init();
-    MX_DMA_Init();
-    MX_USART2_UART_Init();
-    MX_I2C1_Init();
-    /* USER CODE BEGIN 2 */
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_DMA_Init();
+	MX_USART2_UART_Init();
+	MX_I2C1_Init();
+	/* USER CODE BEGIN 2 */
 
-    /* GPIOA and GPIOC Configuration----------------------------------------------*/
-    /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    /* USER CODE BEGIN 2 */
+	/* GPIOA and GPIOC Configuration----------------------------------------------*/
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	/* USER CODE BEGIN 2 */
 
-    /*Configure SSD1306*/
-    ssd1306_Init();
-    DisplayBootMessage();
+	/*Configure SSD1306*/
+	ssd1306_Init();
+	DisplayBootMessage();
 
-    /*Configure GPIO pin : BUTTON_PIN (blue pushbutton)*/
-    GPIO_InitStruct.Pin = BUTTON_PIN;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; /* Try also rising */
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+	/*Configure GPIO pin : BUTTON_PIN (blue pushbutton)*/
+	GPIO_InitStruct.Pin = BUTTON_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; /* Try also rising */
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : BUZZER_PIN (buzzer)*/
-    GPIO_InitStruct.Pin = BUZZER_PIN;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	/*Configure GPIO pin : BUZZER_PIN (buzzer)*/
+	GPIO_InitStruct.Pin = BUZZER_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
-    //////////////////////////////////PINCODE TEST SECTION//////////////////////////////
-    //Write a string to memory
-    uint32_t data = 1234; // Default pincode
-    //SaveToFlash(data, address1); //enable to save a new value
-    uint32_t value = ReadFromFlash(address1);
-    char str[12];  // max per 32-bit unsigned int (10 cifre + '\0')
-    sprintf(str, "%lu", (unsigned long) value); //convert int to string for printing
-    ssd1306_SetCursor(35, 26); // Adjust as needed for centering
-    ssd1306_WriteString(str, Font_7x10, White);
-    ssd1306_UpdateScreen();
-    ///////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////PINCODE TEST SECTION//////////////////////////////
+	//Write a string to memory
+	uint32_t data = 1234; // Default pincode
+	//SaveToFlash(data, address1); //enable to save a new value
+	uint32_t value = ReadFromFlash(address1);
+	char str[12];  // max per 32-bit unsigned int (10 cifre + '\0')
+	sprintf(str, "%lu", (unsigned long) value); //convert int to string for printing
+	ssd1306_SetCursor(35, 26); // Adjust as needed for centering
+	ssd1306_WriteString(str, Font_7x10, White);
+	ssd1306_UpdateScreen();
+	///////////////////////////////////////////////////////////////////////////////////
 
-    HAL_GPIO_WritePin(GPIOB, ESP32_EN, 1);
-    HAL_Delay(5000); // Give time to the ESP to boot and connect to wifi
+	HAL_GPIO_WritePin(GPIOB, ESP32_EN, 1);
+	HAL_Delay(5000); // Give time to the ESP to boot and connect to wifi
 
-    /*-[ I2C Bus Scanning ]-*/
-    ScanI2CDevices();
-    HAL_Delay(500);
-    /*--[ Scanning Done ]--*/
+	/*-[ I2C Bus Scanning ]-*/
+	ScanI2CDevices();
+	HAL_Delay(500);
+	/*--[ Scanning Done ]--*/
 
-    // Ask For the IP Address
-    int max_attempts = 3;
-    int attempt;
-    HAL_StatusTypeDef status;
+	// Ask For the IP Address
+	int max_attempts = 3;
+	int attempt;
+	HAL_StatusTypeDef status;
 
-    for (attempt = 1; attempt <= max_attempts; ++attempt) {
-        status = HAL_I2C_Master_Receive(&hi2c1, (i2c_addr << 1),
-                                        (uint8_t*) rx_data, data_size - 1, HAL_MAX_DELAY);
+	for (attempt = 1; attempt <= max_attempts; ++attempt) {
+		status = HAL_I2C_Master_Receive(&hi2c1, (i2c_addr << 1),
+				(uint8_t*) rx_data, data_size - 1, HAL_MAX_DELAY);
 
-        if (status == HAL_OK) {
-            rx_data[data_size - 1] = '\0';
-            strncpy(device_ip, rx_data, sizeof(device_ip));
-            device_ip[sizeof(device_ip) - 1] = '\0';
+		if (status == HAL_OK) {
+			rx_data[data_size - 1] = '\0';
+			strncpy(device_ip, rx_data, sizeof(device_ip));
+			device_ip[sizeof(device_ip) - 1] = '\0';
 
-            if (is_valid_ip(device_ip)) {
-                printf("\nReceived valid IP: %s\n", device_ip);
+			if (is_valid_ip(device_ip)) {
+				printf("\nReceived valid IP: %s\n", device_ip);
 
-                ssd1306_SetCursor(0, 40);
-                ssd1306_WriteString("IP:", Font_7x10, White);
-                ssd1306_SetCursor(30, 40);
-                ssd1306_WriteString(device_ip, Font_7x10, White);
-                ssd1306_UpdateScreen();
+				ssd1306_SetCursor(0, 40);
+				ssd1306_WriteString("IP:", Font_7x10, White);
+				ssd1306_SetCursor(30, 40);
+				ssd1306_WriteString(device_ip, Font_7x10, White);
+				ssd1306_UpdateScreen();
 
-                HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
-                HAL_Delay(100);
-                break;
-            } else {
-                printf("\nInvalid IP format: %s\n", device_ip);
-            }
-        } else {
-            printf("\nAttempt %d failed to receive IP.\n", attempt);
-        }
-    }
+				HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
+				HAL_Delay(100);
+				break;
+			} else {
+				printf("\nInvalid IP format: %s\n", device_ip);
+			}
+		} else {
+			printf("\nAttempt %d failed to receive IP.\n", attempt);
+		}
+	}
 
-    if (attempt > max_attempts || !is_valid_ip(device_ip)) {
-        ssd1306_SetCursor(0, 40);
-        ssd1306_WriteString("IP ERROR!", Font_7x10, White);
-        ssd1306_UpdateScreen();
-        printf("\nFailed to receive valid IP after %d attempts.\n", max_attempts);
-    }
+	if (attempt > max_attempts || !is_valid_ip(device_ip)) {
+		ssd1306_SetCursor(0, 40);
+		ssd1306_WriteString("IP ERROR!", Font_7x10, White);
+		ssd1306_UpdateScreen();
+		printf("\nFailed to receive valid IP after %d attempts.\n",
+				max_attempts);
+	}
 
-    // Clear screen and show system status
-    ssd1306_Fill(Black);
-    DisplaySystemStatus();
-    /* USER CODE END 2 */
+	// Clear screen and show system status
+	ssd1306_Fill(Black);
+	DisplaySystemStatus();
+	/* USER CODE END 2 */
 
-    /* Infinite loop */
-    /* USER CODE BEGIN WHILE */
-    printf("Configuration Completed. Starting Loop");
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
+	printf("Configuration Completed. Starting Loop");
 
-    uint32_t start_time = 0;
-    bool toggle = 0;
-    char pressed_key = '\0';
+	uint32_t start_time = 0;
+	bool toggle = 0;
+	char pressed_key = '\0';
 
-    while (1) {
-        // Check if system is locked
-        if (system_locked) {
-            if ((HAL_GetTick() - lockout_start) >= LOCKOUT_TIME_MS) {
-                system_locked = false;
-                pin_attempts = 0;
-                DisplaySystemStatus();
-            } else {
-                DisplayLockedScreen();
-                HAL_Delay(100);
-                continue;
-            }
-        }
+	while (1) {
+		// Check if system is locked
+		if (system_locked) {
+			if ((HAL_GetTick() - lockout_start) >= LOCKOUT_TIME_MS) {
+				system_locked = false;
+				pin_attempts = 0;
+				DisplaySystemStatus();
+			} else {
+				DisplayLockedScreen();
+				HAL_Delay(100);
+				continue;
+			}
+		}
 
-        // Scan keypad
-        pressed_key = scan_keypad();
-        if (pressed_key != '\0') {
-            handle_keypress(pressed_key);
-        }
+		// Scan keypad
+		pressed_key = scan_keypad();
+		if (pressed_key != '\0') {
+			handle_keypress(pressed_key);
+		}
 
-        // Handle alarm
-        if (alarm_flag) {
-            if (start_time == 0)
-                start_time = HAL_GetTick();
-            if (HAL_GetTick() - start_time < ALARM_DURATION_MS) {
-                HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
-                ssd1306_Fill(toggle ? Black : White);
-                ssd1306_SetCursor(35, 26);
-                ssd1306_WriteString("ALARM!", Font_7x10,
-                        toggle ? White : Black);
-                ssd1306_UpdateScreen();
-                toggle = !toggle;
-                HAL_Delay(100);
-            } else {
-                StopAlarm();
-                start_time = 0;
-            }
-        }
+		// Handle alarm
+		if (alarm_flag) {
+			if (start_time == 0)
+				start_time = HAL_GetTick();
+			if (HAL_GetTick() - start_time < ALARM_DURATION_MS) {
+				HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
+				ssd1306_Fill(toggle ? Black : White);
+				ssd1306_SetCursor(35, 26);
+				ssd1306_WriteString("ALARM!", Font_7x10,
+						toggle ? White : Black);
+				ssd1306_UpdateScreen();
+				toggle = !toggle;
+				HAL_Delay(100);
+			} else {
+				StopAlarm();
+				start_time = 0;
+			}
+		}
 
-        HAL_Delay(10); // Small delay to reduce CPU usage
-    }
-    /* USER CODE END WHILE */
+		HAL_Delay(10); // Small delay to reduce CPU usage
+	}
+	/* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
+	/* USER CODE BEGIN 3 */
 
-    /* USER CODE END 3 */
+	/* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
+	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-    /** Configure the main internal regulator output voltage
-    */
-    __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
+	/** Configure the main internal regulator output voltage
+	 */
+	__HAL_RCC_PWR_CLK_ENABLE();
+	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
 
-    /** Initializes the RCC Oscillators according to the specified parameters
-    * in the RCC_OscInitTypeDef structure.
-    */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-    RCC_OscInitStruct.PLL.PLLM = 16;
-    RCC_OscInitStruct.PLL.PLLN = 336;
-    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
-    RCC_OscInitStruct.PLL.PLLQ = 7;
-    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-    {
-        Error_Handler();
-    }
+	/** Initializes the RCC Oscillators according to the specified parameters
+	 * in the RCC_OscInitTypeDef structure.
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+	RCC_OscInitStruct.PLL.PLLM = 16;
+	RCC_OscInitStruct.PLL.PLLN = 336;
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+	RCC_OscInitStruct.PLL.PLLQ = 7;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
 
-    /** Initializes the CPU, AHB and APB buses clocks
-    */
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                                |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+	/** Initializes the CPU, AHB and APB buses clocks
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-    {
-        Error_Handler();
-    }
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
+		Error_Handler();
+	}
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-    /* USER CODE BEGIN I2C1_Init 0 */
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C1_Init(void) {
+	/* USER CODE BEGIN I2C1_Init 0 */
 
-    /* USER CODE END I2C1_Init 0 */
+	/* USER CODE END I2C1_Init 0 */
 
-    /* USER CODE BEGIN I2C1_Init 1 */
+	/* USER CODE BEGIN I2C1_Init 1 */
 
-    /* USER CODE END I2C1_Init 1 */
-    hi2c1.Instance = I2C1;
-    hi2c1.Init.ClockSpeed = 100000;
-    hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-    hi2c1.Init.OwnAddress1 = 0;
-    hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-    hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-    hi2c1.Init.OwnAddress2 = 0;
-    hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-    hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-    if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    /* USER CODE BEGIN I2C1_Init 2 */
+	/* USER CODE END I2C1_Init 1 */
+	hi2c1.Instance = I2C1;
+	hi2c1.Init.ClockSpeed = 100000;
+	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+	hi2c1.Init.OwnAddress1 = 0;
+	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c1.Init.OwnAddress2 = 0;
+	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&hi2c1) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2C1_Init 2 */
 
-    /* USER CODE END I2C1_Init 2 */
+	/* USER CODE END I2C1_Init 2 */
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-    /* USER CODE BEGIN USART2_Init 0 */
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART2_UART_Init(void) {
+	/* USER CODE BEGIN USART2_Init 0 */
 
-    /* USER CODE END USART2_Init 0 */
+	/* USER CODE END USART2_Init 0 */
 
-    /* USER CODE BEGIN USART2_Init 1 */
+	/* USER CODE BEGIN USART2_Init 1 */
 
-    /* USER CODE END USART2_Init 1 */
-    huart2.Instance = USART2;
-    huart2.Init.BaudRate = 115200;
-    huart2.Init.WordLength = UART_WORDLENGTH_8B;
-    huart2.Init.StopBits = UART_STOPBITS_1;
-    huart2.Init.Parity = UART_PARITY_NONE;
-    huart2.Init.Mode = UART_MODE_TX_RX;
-    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-    if (HAL_UART_Init(&huart2) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    /* USER CODE BEGIN USART2_Init 2 */
+	/* USER CODE END USART2_Init 1 */
+	huart2.Instance = USART2;
+	huart2.Init.BaudRate = 115200;
+	huart2.Init.WordLength = UART_WORDLENGTH_8B;
+	huart2.Init.StopBits = UART_STOPBITS_1;
+	huart2.Init.Parity = UART_PARITY_NONE;
+	huart2.Init.Mode = UART_MODE_TX_RX;
+	huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+	if (HAL_UART_Init(&huart2) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN USART2_Init 2 */
 
-    /* USER CODE END USART2_Init 2 */
+	/* USER CODE END USART2_Init 2 */
 }
 
 /**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-    /* DMA controller clock enable */
-    __HAL_RCC_DMA1_CLK_ENABLE();
+ * Enable DMA controller clock
+ */
+static void MX_DMA_Init(void) {
+	/* DMA controller clock enable */
+	__HAL_RCC_DMA1_CLK_ENABLE();
 
-    /* DMA interrupt init */
-    /* DMA1_Stream0_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-    /* DMA1_Stream6_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+	/* DMA interrupt init */
+	/* DMA1_Stream0_IRQn interrupt configuration */
+	HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+	/* DMA1_Stream6_IRQn interrupt configuration */
+	HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    /* USER CODE BEGIN MX_GPIO_Init_1 */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void) {
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
 
-    /* USER CODE END MX_GPIO_Init_1 */
+	/* USER CODE END MX_GPIO_Init_1 */
 
-    /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOH_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOH_CLK_ENABLE();
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
 
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOA, LD2_Pin|GPIO_PIN_10, GPIO_PIN_RESET);
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOA, LD2_Pin | GPIO_PIN_10, GPIO_PIN_RESET);
 
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_10
-                            |GPIO_PIN_5, GPIO_PIN_RESET);
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOB,
+	GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_5,
+			GPIO_PIN_RESET);
 
-    /*Configure GPIO pin : B1_Pin */
-    GPIO_InitStruct.Pin = B1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+	/*Configure GPIO pin : B1_Pin */
+	GPIO_InitStruct.Pin = B1_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : LD2_Pin PA10 */
-    GPIO_InitStruct.Pin = LD2_Pin|GPIO_PIN_10;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	/*Configure GPIO pins : LD2_Pin PA10 */
+	GPIO_InitStruct.Pin = LD2_Pin | GPIO_PIN_10;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PC4 PC5 PC6 PC7 */
-    GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;  // Enable pull-up resistors for columns
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+	/*Configure GPIO pins : PC4 PC5 PC6 PC7 */
+	GPIO_InitStruct.Pin = GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;  // Enable pull-up resistors for columns
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PB0 PB1 PB2 PB10 */
-    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_10;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	/*Configure GPIO pins : PB0 PB1 PB2 PB10 */
+	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : PB5 */
-    GPIO_InitStruct.Pin = GPIO_PIN_5;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	/*Configure GPIO pin : PB5 */
+	GPIO_InitStruct.Pin = GPIO_PIN_5;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    /* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
 
-    /* USER CODE END MX_GPIO_Init_2 */
+	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
 void EXTI15_10_IRQHandler(void) {
-    if (__HAL_GPIO_EXTI_GET_IT(BUTTON_PIN) != RESET) {
-        __HAL_GPIO_EXTI_CLEAR_IT(BUTTON_PIN);
-        if (system_armed) {
-            TriggerAlarm();
-        }
-    }
+	if (__HAL_GPIO_EXTI_GET_IT(BUTTON_PIN) != RESET) {
+		__HAL_GPIO_EXTI_CLEAR_IT(BUTTON_PIN);
+		if (system_armed) {
+			TriggerAlarm();
+		}
+	}
 }
 
 // Boot Message Display Function
 void DisplayBootMessage(void) {
-    // Clear screen (black background)
-    ssd1306_Fill(Black);
+	// Clear screen (black background)
+	ssd1306_Fill(Black);
 
-    // Welcome title
-    ssd1306_SetCursor(10, 10);
-    ssd1306_WriteString("Smart Alarm System", Font_7x10, White);
+	// Welcome title
+	ssd1306_SetCursor(10, 10);
+	ssd1306_WriteString("Smart Alarm System", Font_7x10, White);
 
-    // Booting line
-    ssd1306_SetCursor(30, 30);
-    ssd1306_WriteString("Booting up...", Font_6x8, White);
+	// Booting line
+	ssd1306_SetCursor(30, 30);
+	ssd1306_WriteString("Booting up...", Font_6x8, White);
 
-    ssd1306_UpdateScreen();
-    HAL_Delay(1500);  // Dramatic pause
+	ssd1306_UpdateScreen();
+	HAL_Delay(1500);  // Dramatic pause
 
-    // Flash to white background, black text
-    ssd1306_Fill(White);
-    ssd1306_SetCursor(30, 26);
-    ssd1306_WriteString("System Ready", Font_7x10, Black);
-    ssd1306_UpdateScreen();
-    HAL_Delay(1000);
+	// Flash to white background, black text
+	ssd1306_Fill(White);
+	ssd1306_SetCursor(30, 26);
+	ssd1306_WriteString("System Ready", Font_7x10, Black);
+	ssd1306_UpdateScreen();
+	HAL_Delay(1000);
 
-    // Clear again to prepare for runtime display
-    ssd1306_Fill(Black);
-    ssd1306_UpdateScreen();
+	// Clear again to prepare for runtime display
+	ssd1306_Fill(Black);
+	ssd1306_UpdateScreen();
 }
 
 void DisplaySystemStatus(void) {
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(10, 10);
-    ssd1306_WriteString("System Status:", Font_7x10, White);
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(10, 10);
+	ssd1306_WriteString("System Status:", Font_7x10, White);
 
-    ssd1306_SetCursor(10, 25);
-    if (system_armed) {
-        ssd1306_WriteString("ARMED", Font_7x10, White);
-    } else {
-        ssd1306_WriteString("DISARMED", Font_7x10, White);
-    }
+	ssd1306_SetCursor(10, 25);
+	if (system_armed) {
+		ssd1306_WriteString("ARMED", Font_7x10, White);
+	} else {
+		ssd1306_WriteString("DISARMED", Font_7x10, White);
+	}
 
-    ssd1306_SetCursor(10, 40);
-    ssd1306_WriteString("Press A to arm", Font_6x8, White);
-    ssd1306_SetCursor(10, 50);
-    ssd1306_WriteString("Press B to disarm", Font_6x8, White);
+	ssd1306_SetCursor(10, 40);
+	ssd1306_WriteString("Press A to arm", Font_6x8, White);
+	ssd1306_SetCursor(10, 50);
+	ssd1306_WriteString("Press B to disarm", Font_6x8, White);
 
-    ssd1306_UpdateScreen();
+	ssd1306_UpdateScreen();
 }
 
 void DisplayLockedScreen(void) {
-    uint32_t remaining = (LOCKOUT_TIME_MS - (HAL_GetTick() - lockout_start)) / 1000;
-    char msg[30];
+	uint32_t remaining = (LOCKOUT_TIME_MS - (HAL_GetTick() - lockout_start))
+			/ 1000;
+	char msg[30];
 
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(10, 10);
-    ssd1306_WriteString("SYSTEM LOCKED", Font_7x10, White);
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(10, 10);
+	ssd1306_WriteString("SYSTEM LOCKED", Font_7x10, White);
 
-    sprintf(msg, "Wait %lu seconds", remaining);
-    ssd1306_SetCursor(10, 30);
-    ssd1306_WriteString(msg, Font_7x10, White);
+	sprintf(msg, "Wait %lu seconds", remaining);
+	ssd1306_SetCursor(10, 30);
+	ssd1306_WriteString(msg, Font_7x10, White);
 
-    ssd1306_UpdateScreen();
+	ssd1306_UpdateScreen();
 }
 
 void DisplayEnterPincode(void) {
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(10, 10);
-    ssd1306_WriteString("Enter PINCODE:", Font_7x10, White);
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(10, 10);
+	ssd1306_WriteString("Enter PINCODE:", Font_7x10, White);
 
-    // Display entered digits as asterisks
-    char display[PINCODE_LENGTH + 1];
-    for (uint8_t i = 0; i < pincode_position; i++) {
-        display[i] = '*';
-    }
-    display[pincode_position] = '\0';
+	// Display entered digits as asterisks
+	char display[PINCODE_LENGTH + 1];
+	for (uint8_t i = 0; i < pincode_position; i++) {
+		display[i] = '*';
+	}
+	display[pincode_position] = '\0';
 
-    ssd1306_SetCursor(50, 30);
-    ssd1306_WriteString(display, Font_11x18, White);
+	ssd1306_SetCursor(50, 30);
+	ssd1306_WriteString(display, Font_11x18, White);
 
-    ssd1306_UpdateScreen();
+	ssd1306_UpdateScreen();
 }
 
 void DisplayAccessGranted(void) {
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(20, 20);
-    ssd1306_WriteString("ACCESS", Font_11x18, White);
-    ssd1306_SetCursor(30, 40);
-    ssd1306_WriteString("GRANTED", Font_11x18, White);
-    ssd1306_UpdateScreen();
-    HAL_Delay(2000);
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(20, 20);
+	ssd1306_WriteString("ACCESS", Font_11x18, White);
+	ssd1306_SetCursor(30, 40);
+	ssd1306_WriteString("GRANTED", Font_11x18, White);
+	ssd1306_UpdateScreen();
+	HAL_Delay(2000);
 }
 
 void DisplayAccessDenied(void) {
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(20, 20);
-    ssd1306_WriteString("ACCESS", Font_11x18, White);
-    ssd1306_SetCursor(30, 40);
-    ssd1306_WriteString("DENIED", Font_11x18, White);
-    ssd1306_UpdateScreen();
-    HAL_Delay(2000);
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(20, 20);
+	ssd1306_WriteString("ACCESS", Font_11x18, White);
+	ssd1306_SetCursor(30, 40);
+	ssd1306_WriteString("DENIED", Font_11x18, White);
+	ssd1306_UpdateScreen();
+	HAL_Delay(2000);
 }
 
 void TriggerAlarm(void) {
-    alarm_flag = 1;
-    HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_SET);
+	alarm_flag = 1;
+	HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_SET);
 }
 
 void StopAlarm(void) {
-    alarm_flag = 0;
-    HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_RESET);
-    ssd1306_Fill(Black);
-    ssd1306_UpdateScreen();
-    DisplaySystemStatus();
+	alarm_flag = 0;
+	HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_RESET);
+	ssd1306_Fill(Black);
+	ssd1306_UpdateScreen();
+	DisplaySystemStatus();
 }
 
 int ScanI2CDevices(void) {
-    uint8_t i, ret;
-    char buffer[16];
-    int found = 0;
+	uint8_t i, ret;
+	char buffer[16];
+	int found = 0;
 
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(0, 0);
-    ssd1306_WriteString("I2C Scan:", Font_7x10, White);
-    ssd1306_UpdateScreen();
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(0, 0);
+	ssd1306_WriteString("I2C Scan:", Font_7x10, White);
+	ssd1306_UpdateScreen();
 
-    HAL_Delay(500);
+	HAL_Delay(500);
 
-    printf("%s", StartMSG);
+	printf("%s", StartMSG);
 
-    for (i = 1; i < 128; i++) {
-        ret = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(i << 1), 3, 5);
-        if (ret == HAL_OK) {
-            sprintf(Buffer, "0x%X", i);
-            HAL_UART_Transmit(&huart2, Buffer, sizeof(Buffer), 10000);
+	for (i = 1; i < 128; i++) {
+		ret = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t) (i << 1), 3, 5);
+		if (ret == HAL_OK) {
+			sprintf(Buffer, "0x%X", i);
+			HAL_UART_Transmit(&huart2, Buffer, sizeof(Buffer), 10000);
 
-            // Display the address found
-            sprintf(buffer, "Found: 0x%02X", i);
-            ssd1306_SetCursor(0, 16 + found * 10);
-            ssd1306_WriteString(buffer, Font_6x8, White);
-            ssd1306_UpdateScreen();
+			// Display the address found
+			sprintf(buffer, "Found: 0x%02X", i);
+			ssd1306_SetCursor(0, 16 + found * 10);
+			ssd1306_WriteString(buffer, Font_6x8, White);
+			ssd1306_UpdateScreen();
 
-            HAL_Delay(300);
-            found++;
-            if (found > 4) break; // prevent OLED overflow
-        } else {
-            HAL_UART_Transmit(&huart2, Space, sizeof(Space), 10000);
-        }
-    }
+			HAL_Delay(300);
+			found++;
+			if (found > 4)
+				break; // prevent OLED overflow
+		} else {
+			HAL_UART_Transmit(&huart2, Space, sizeof(Space), 10000);
+		}
+	}
 
-    HAL_UART_Transmit(&huart2, EndMSG, sizeof(EndMSG), 10000);
-    return found;
+	HAL_UART_Transmit(&huart2, EndMSG, sizeof(EndMSG), 10000);
+	return found;
 }
 
 bool is_valid_ip(const char *ip) {
-    int num, dots = 0;
-    char *ptr;
-    char ip_copy[32];
-    strncpy(ip_copy, ip, sizeof(ip_copy));
-    ip_copy[sizeof(ip_copy) - 1] = '\0';
+	int num, dots = 0;
+	char *ptr;
+	char ip_copy[32];
+	strncpy(ip_copy, ip, sizeof(ip_copy));
+	ip_copy[sizeof(ip_copy) - 1] = '\0';
 
-    ptr = strtok(ip_copy, ".");
-    if (ptr == NULL) return false;
+	ptr = strtok(ip_copy, ".");
+	if (ptr == NULL)
+		return false;
 
-    while (ptr) {
-        if (!isdigit(*ptr)) return false;
+	while (ptr) {
+		if (!isdigit(*ptr))
+			return false;
 
-        num = atoi(ptr);
-        if (num < 0 || num > 255) return false;
+		num = atoi(ptr);
+		if (num < 0 || num > 255)
+			return false;
 
-        ptr = strtok(NULL, ".");
-        if (ptr != NULL) dots++;
-    }
+		ptr = strtok(NULL, ".");
+		if (ptr != NULL)
+			dots++;
+	}
 
-    return dots == 3;
+	return dots == 3;
 }
 
 char scan_keypad(void) {
-    char key = '\0';
-    uint8_t row, col;
+	char key = '\0';
+	uint8_t row, col;
 
-    // Scan each row
-    for (row = 0; row < 4; row++) {
-        // Set all rows high except the current row
-        HAL_GPIO_WritePin(ROW_PORT, ROW1_PIN | ROW2_PIN | ROW3_PIN | ROW4_PIN, GPIO_PIN_SET);
-        switch(row) {
-            case 0: HAL_GPIO_WritePin(ROW_PORT, ROW1_PIN, GPIO_PIN_RESET); break;
-            case 1: HAL_GPIO_WritePin(ROW_PORT, ROW2_PIN, GPIO_PIN_RESET); break;
-            case 2: HAL_GPIO_WritePin(ROW_PORT, ROW3_PIN, GPIO_PIN_RESET); break;
-            case 3: HAL_GPIO_WritePin(ROW_PORT, ROW4_PIN, GPIO_PIN_RESET); break;
-        }
+	// Scan each row
+	for (row = 0; row < 4; row++) {
+		// Set all rows high except the current row
+		HAL_GPIO_WritePin(ROW_PORT, ROW1_PIN | ROW2_PIN | ROW3_PIN | ROW4_PIN,
+				GPIO_PIN_SET);
+		switch (row) {
+		case 0:
+			HAL_GPIO_WritePin(ROW_PORT, ROW1_PIN, GPIO_PIN_RESET);
+			break;
+		case 1:
+			HAL_GPIO_WritePin(ROW_PORT, ROW2_PIN, GPIO_PIN_RESET);
+			break;
+		case 2:
+			HAL_GPIO_WritePin(ROW_PORT, ROW3_PIN, GPIO_PIN_RESET);
+			break;
+		case 3:
+			HAL_GPIO_WritePin(ROW_PORT, ROW4_PIN, GPIO_PIN_RESET);
+			break;
+		}
 
-        // Small delay for stabilization
-        HAL_Delay(1);
+		// Small delay for stabilization
+		HAL_Delay(1);
 
-        // Check each column
-        if (HAL_GPIO_ReadPin(COL_PORT, COL1_PIN) == GPIO_PIN_RESET) {
-            key = keypad[row][0];
-        }
-        else if (HAL_GPIO_ReadPin(COL_PORT, COL2_PIN) == GPIO_PIN_RESET) {
-            key = keypad[row][1];
-        }
-        else if (HAL_GPIO_ReadPin(COL_PORT, COL3_PIN) == GPIO_PIN_RESET) {
-            key = keypad[row][2];
-        }
-        else if (HAL_GPIO_ReadPin(COL_PORT, COL4_PIN) == GPIO_PIN_RESET) {
-            key = keypad[row][3];
-        }
+		// Check each column
+		if (HAL_GPIO_ReadPin(COL_PORT, COL1_PIN) == GPIO_PIN_RESET) {
+			key = keypad[row][0];
+		} else if (HAL_GPIO_ReadPin(COL_PORT, COL2_PIN) == GPIO_PIN_RESET) {
+			key = keypad[row][1];
+		} else if (HAL_GPIO_ReadPin(COL_PORT, COL3_PIN) == GPIO_PIN_RESET) {
+			key = keypad[row][2];
+		} else if (HAL_GPIO_ReadPin(COL_PORT, COL4_PIN) == GPIO_PIN_RESET) {
+			key = keypad[row][3];
+		}
 
-        if (key != '\0') {
-            // Debounce check
-            if (key == last_key && (HAL_GetTick() - last_key_time) < KEY_DEBOUNCE_MS) {
-                return '\0';
-            }
-            last_key = key;
-            last_key_time = HAL_GetTick();
-            return key;
-        }
-    }
+		if (key != '\0') {
+			// Debounce check
+			if (key
+					== last_key&& (HAL_GetTick() - last_key_time) < KEY_DEBOUNCE_MS) {
+				return '\0';
+			}
+			last_key = key;
+			last_key_time = HAL_GetTick();
+			return key;
+		}
+	}
 
-    return '\0';
+	return '\0';
 }
 
 void handle_keypress(char key) {
-    if (key == '\0') return;
+	if (key == '\0')
+		return;
 
-    printf("Key pressed: %c\r\n", key);
+	printf("Key pressed: %c\r\n", key);
 
-    // Handle special keys
-    switch(key) {
-        case 'A': // Arm system
-            if (!system_armed && !system_locked) {
-                pincode_position = 0;
-                memset(entered_pincode, 0, sizeof(entered_pincode));
-                DisplayEnterPincode();
-            }
-            break;
+	// Handle special keys
+	switch (key) {
+	case 'A': // Arm system
+		if (!system_armed && !system_locked) {
+			pincode_position = 0;
+			memset(entered_pincode, 0, sizeof(entered_pincode));
+			DisplayEnterPincode();
+		}
+		break;
 
-        case 'B': // Disarm system
-            if (system_armed && !system_locked) {
-                pincode_position = 0;
-                memset(entered_pincode, 0, sizeof(entered_pincode));
-                DisplayEnterPincode();
-            }
-            break;
+	case 'B': // Disarm system
+		if (system_armed && !system_locked) {
+			pincode_position = 0;
+			memset(entered_pincode, 0, sizeof(entered_pincode));
+			DisplayEnterPincode();
+		}
+		break;
 
-        case 'C': // Cancel input
-            pincode_position = 0;
-            memset(entered_pincode, 0, sizeof(entered_pincode));
-            DisplaySystemStatus();
-            break;
+	case 'C': // Cancel input
+		pincode_position = 0;
+		memset(entered_pincode, 0, sizeof(entered_pincode));
+		DisplaySystemStatus();
+		break;
 
-        case 'D': // Confirm input
-            if (pincode_position == PINCODE_LENGTH) {
-                check_pincode();
-            }
-            break;
+	case 'D': // Confirm input
+		if (pincode_position == PINCODE_LENGTH) {
+			check_pincode();
+		}
+		break;
 
-        case '*': // Clear input
-            pincode_position = 0;
-            memset(entered_pincode, 0, sizeof(entered_pincode));
-            DisplayEnterPincode();
-            break;
+	case '*': // Clear input
+		pincode_position = 0;
+		memset(entered_pincode, 0, sizeof(entered_pincode));
+		DisplayEnterPincode();
+		break;
 
-        case '#': // Ignore for now
-            break;
+	case '#': // Ignore for now
+		break;
 
-        default: // Numeric keys
-            if (pincode_position < PINCODE_LENGTH && isdigit(key)) {
-                entered_pincode[pincode_position++] = key;
-                DisplayEnterPincode();
-            }
-            break;
-    }
+	default: // Numeric keys
+		if (pincode_position < PINCODE_LENGTH && isdigit(key)) {
+			entered_pincode[pincode_position++] = key;
+			DisplayEnterPincode();
+		}
+		break;
+	}
 }
 
 void check_pincode(void) {
-    uint32_t stored_pincode = ReadFromFlash(address1);
-    char stored_pincode_str[PINCODE_LENGTH + 1];
-    sprintf(stored_pincode_str, "%04lu", stored_pincode);
+	uint32_t stored_pincode = ReadFromFlash(address1);
+	char stored_pincode_str[PINCODE_LENGTH + 1];
+	sprintf(stored_pincode_str, "%04lu", stored_pincode);
 
-    if (strncmp(entered_pincode, stored_pincode_str, PINCODE_LENGTH) == 0) {
-        // Correct pincode
-        pin_attempts = 0;
-        system_armed = !system_armed; // Toggle armed state
-        DisplayAccessGranted();
-        DisplaySystemStatus();
-    } else {
-        // Wrong pincode
-        pin_attempts++;
-        if (pin_attempts >= MAX_PIN_ATTEMPTS) {
-            system_locked = true;
-            lockout_start = HAL_GetTick();
-            DisplayLockedScreen();
-        } else {
-            DisplayAccessDenied();
-            pincode_position = 0;
-            memset(entered_pincode, 0, sizeof(entered_pincode));
-            DisplayEnterPincode();
-        }
-    }
+	if (strncmp(entered_pincode, stored_pincode_str, PINCODE_LENGTH) == 0) {
+		// Correct pincode
+		pin_attempts = 0;
+		system_armed = !system_armed; // Toggle armed state
+		DisplayAccessGranted();
+		DisplaySystemStatus();
+	} else {
+		// Wrong pincode
+		pin_attempts++;
+		if (pin_attempts >= MAX_PIN_ATTEMPTS) {
+			system_locked = true;
+			lockout_start = HAL_GetTick();
+			DisplayLockedScreen();
+		} else {
+			DisplayAccessDenied();
+			pincode_position = 0;
+			memset(entered_pincode, 0, sizeof(entered_pincode));
+			DisplayEnterPincode();
+		}
+	}
 }
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-    /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
-    __disable_irq();
-    while (1) {
-    }
-    /* USER CODE END Error_Handler_Debug */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
+	/* USER CODE BEGIN Error_Handler_Debug */
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+	while (1) {
+	}
+	/* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
