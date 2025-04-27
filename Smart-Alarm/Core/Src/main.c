@@ -2,7 +2,7 @@
 /**
  ******************************************************************************
  * @file           : main.c
- * @brief          : Smart Alarm System
+ * @brief          : Smart Alarm System with Reed Switch
  ******************************************************************************
  * @attention
  *
@@ -38,10 +38,12 @@
 #define MAX_PIN_ATTEMPTS 3
 #define LOCKOUT_TIME_MS 30000
 #define KEY_DEBOUNCE_MS 200
+#define REED_DEBOUNCE_MS 200
 #define data_size 14
 
 /* Pin Definitions */
 #define BUTTON_PIN         GPIO_PIN_13
+#define REED_SWITCH_PIN    GPIO_PIN_8
 #define BUZZER_PIN         GPIO_PIN_10
 #define ESP32_EN           GPIO_PIN_5
 #define LD2_PIN            LD2_Pin
@@ -86,8 +88,10 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 volatile uint8_t alarm_flag = 0;
 volatile uint8_t key_pressed = 0;
+volatile uint8_t reed_triggered = 0;
 char last_key = '\0';
 uint32_t last_key_time = 0;
+uint32_t last_reed_time = 0;
 
 char entered_pincode[PINCODE_LENGTH + 1] = { 0 };
 uint8_t pincode_position = 0;
@@ -104,7 +108,7 @@ uint8_t EndMSG[] = "Done! \r\n\r\n";
 uint8_t i2c_addr = 0x5c;
 
 char rx_data[data_size];
-char device_ip[32]; // Declare this somewhere globally or within scope
+char device_ip[32];
 
 /* USER CODE END PV */
 
@@ -131,6 +135,7 @@ void DisplayAccessDenied(void);
 void DisplaySystemStatus(void);
 void TriggerAlarm(void);
 void StopAlarm(void);
+void HandleReedSwitch(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -188,7 +193,7 @@ int main(void) {
 
 	/*Configure GPIO pin : BUTTON_PIN (blue pushbutton)*/
 	GPIO_InitStruct.Pin = BUTTON_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; /* Try also rising */
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
@@ -202,17 +207,15 @@ int main(void) {
 	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
-	//////////////////////////////////PINCODE TEST SECTION//////////////////////////////
-	//Write a string to memory
+	// Write a string to memory
 	uint32_t data = 1234; // Default pincode
 	//SaveToFlash(data, address1); //enable to save a new value
 	uint32_t value = ReadFromFlash(address1);
-	char str[12];  // max per 32-bit unsigned int (10 cifre + '\0')
-	sprintf(str, "%lu", (unsigned long) value); //convert int to string for printing
-	ssd1306_SetCursor(35, 26); // Adjust as needed for centering
+	char str[12];
+	sprintf(str, "%lu", (unsigned long) value);
+	ssd1306_SetCursor(35, 26);
 	ssd1306_WriteString(str, Font_7x10, White);
 	ssd1306_UpdateScreen();
-	///////////////////////////////////////////////////////////////////////////////////
 
 	HAL_GPIO_WritePin(GPIOB, ESP32_EN, 1);
 	HAL_Delay(5000); // Give time to the ESP to boot and connect to wifi
@@ -296,6 +299,9 @@ int main(void) {
 		if (pressed_key != '\0') {
 			handle_keypress(pressed_key);
 		}
+
+		// Check reed switch status
+		HandleReedSwitch();
 
 		// Handle alarm
 		if (alarm_flag) {
@@ -484,7 +490,7 @@ static void MX_GPIO_Init(void) {
 	/*Configure GPIO pins : PC4 PC5 PC6 PC7 */
 	GPIO_InitStruct.Pin = GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;  // Enable pull-up resistors for columns
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : PB0 PB1 PB2 PB10 */
@@ -502,7 +508,15 @@ static void MX_GPIO_Init(void) {
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 	/* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* Configure PA8 as input for reed switch with interrupt */
+	GPIO_InitStruct.Pin = GPIO_PIN_8;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; // Interrupt on rising edge (reed switch closed)
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;  // Pull-down when reed switch is open
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+	/* Enable and set EXTI interrupt priority */
+	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 	/* USER CODE END MX_GPIO_Init_2 */
 }
 
@@ -516,30 +530,41 @@ void EXTI15_10_IRQHandler(void) {
 	}
 }
 
+void EXTI9_5_IRQHandler(void) {
+	if (__HAL_GPIO_EXTI_GET_IT(REED_SWITCH_PIN) != RESET) {
+		if ((HAL_GetTick() - last_reed_time) > REED_DEBOUNCE_MS) {
+			last_reed_time = HAL_GetTick();
+			__HAL_GPIO_EXTI_CLEAR_IT(REED_SWITCH_PIN);
+			reed_triggered = 1;
+		}
+	}
+}
+
+void HandleReedSwitch(void) {
+	if (reed_triggered && system_armed) {
+		reed_triggered = 0;
+		TriggerAlarm();
+	}
+}
+
 // Boot Message Display Function
 void DisplayBootMessage(void) {
-	// Clear screen (black background)
 	ssd1306_Fill(Black);
-
-	// Welcome title
 	ssd1306_SetCursor(10, 10);
 	ssd1306_WriteString("Smart Alarm System", Font_7x10, White);
 
-	// Booting line
 	ssd1306_SetCursor(30, 30);
 	ssd1306_WriteString("Booting up...", Font_6x8, White);
 
 	ssd1306_UpdateScreen();
-	HAL_Delay(1500);  // Dramatic pause
+	HAL_Delay(1500);
 
-	// Flash to white background, black text
 	ssd1306_Fill(White);
 	ssd1306_SetCursor(30, 26);
 	ssd1306_WriteString("System Ready", Font_7x10, Black);
 	ssd1306_UpdateScreen();
 	HAL_Delay(1000);
 
-	// Clear again to prepare for runtime display
 	ssd1306_Fill(Black);
 	ssd1306_UpdateScreen();
 }
@@ -585,7 +610,6 @@ void DisplayEnterPincode(void) {
 	ssd1306_SetCursor(10, 10);
 	ssd1306_WriteString("Enter PINCODE:", Font_7x10, White);
 
-	// Display entered digits as asterisks
 	char display[PINCODE_LENGTH + 1];
 	for (uint8_t i = 0; i < pincode_position; i++) {
 		display[i] = '*';
@@ -651,7 +675,6 @@ int ScanI2CDevices(void) {
 			sprintf(Buffer, "0x%X", i);
 			HAL_UART_Transmit(&huart2, Buffer, sizeof(Buffer), 10000);
 
-			// Display the address found
 			sprintf(buffer, "Found: 0x%02X", i);
 			ssd1306_SetCursor(0, 16 + found * 10);
 			ssd1306_WriteString(buffer, Font_6x8, White);
@@ -660,7 +683,7 @@ int ScanI2CDevices(void) {
 			HAL_Delay(300);
 			found++;
 			if (found > 4)
-				break; // prevent OLED overflow
+				break;
 		} else {
 			HAL_UART_Transmit(&huart2, Space, sizeof(Space), 10000);
 		}
@@ -701,9 +724,7 @@ char scan_keypad(void) {
 	char key = '\0';
 	uint8_t row, col;
 
-	// Scan each row
 	for (row = 0; row < 4; row++) {
-		// Set all rows high except the current row
 		HAL_GPIO_WritePin(ROW_PORT, ROW1_PIN | ROW2_PIN | ROW3_PIN | ROW4_PIN,
 				GPIO_PIN_SET);
 		switch (row) {
@@ -721,10 +742,8 @@ char scan_keypad(void) {
 			break;
 		}
 
-		// Small delay for stabilization
 		HAL_Delay(1);
 
-		// Check each column
 		if (HAL_GPIO_ReadPin(COL_PORT, COL1_PIN) == GPIO_PIN_RESET) {
 			key = keypad[row][0];
 		} else if (HAL_GPIO_ReadPin(COL_PORT, COL2_PIN) == GPIO_PIN_RESET) {
@@ -736,7 +755,6 @@ char scan_keypad(void) {
 		}
 
 		if (key != '\0') {
-			// Debounce check
 			if (key
 					== last_key&& (HAL_GetTick() - last_key_time) < KEY_DEBOUNCE_MS) {
 				return '\0';
@@ -756,9 +774,8 @@ void handle_keypress(char key) {
 
 	printf("Key pressed: %c\r\n", key);
 
-	// Handle special keys
 	switch (key) {
-	case 'A': // Arm system
+	case 'A':
 		if (!system_armed && !system_locked) {
 			pincode_position = 0;
 			memset(entered_pincode, 0, sizeof(entered_pincode));
@@ -766,7 +783,7 @@ void handle_keypress(char key) {
 		}
 		break;
 
-	case 'B': // Disarm system
+	case 'B':
 		if (system_armed && !system_locked) {
 			pincode_position = 0;
 			memset(entered_pincode, 0, sizeof(entered_pincode));
@@ -774,28 +791,28 @@ void handle_keypress(char key) {
 		}
 		break;
 
-	case 'C': // Cancel input
+	case 'C':
 		pincode_position = 0;
 		memset(entered_pincode, 0, sizeof(entered_pincode));
 		DisplaySystemStatus();
 		break;
 
-	case 'D': // Confirm input
+	case 'D':
 		if (pincode_position == PINCODE_LENGTH) {
 			check_pincode();
 		}
 		break;
 
-	case '*': // Clear input
+	case '*':
 		pincode_position = 0;
 		memset(entered_pincode, 0, sizeof(entered_pincode));
 		DisplayEnterPincode();
 		break;
 
-	case '#': // Ignore for now
+	case '#':
 		break;
 
-	default: // Numeric keys
+	default:
 		if (pincode_position < PINCODE_LENGTH && isdigit(key)) {
 			entered_pincode[pincode_position++] = key;
 			DisplayEnterPincode();
@@ -810,13 +827,11 @@ void check_pincode(void) {
 	sprintf(stored_pincode_str, "%04lu", stored_pincode);
 
 	if (strncmp(entered_pincode, stored_pincode_str, PINCODE_LENGTH) == 0) {
-		// Correct pincode
 		pin_attempts = 0;
-		system_armed = !system_armed; // Toggle armed state
+		system_armed = !system_armed;
 		DisplayAccessGranted();
 		DisplaySystemStatus();
 	} else {
-		// Wrong pincode
 		pin_attempts++;
 		if (pin_attempts >= MAX_PIN_ATTEMPTS) {
 			system_locked = true;
