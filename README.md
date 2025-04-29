@@ -6,6 +6,8 @@ Smart alarm security system based on STM32 as the main microcontroller. It is in
 
 This project is a smart alarm system designed to enhance home or office security. The system utilizes an STM32 microcontroller in conjunction with various sensors and modules to detect unauthorized access and notify users over WiFi. Features include keypad entry, RFID authentication, motion detection, and more.
 
+![testgif](Assets/test.gif)
+
 ## Components
 
 The following hardware components are used in this project:
