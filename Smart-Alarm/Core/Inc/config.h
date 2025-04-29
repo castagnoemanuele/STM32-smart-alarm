@@ -10,6 +10,9 @@
 #define REED_DEBOUNCE_MS 200
 #define DATA_SIZE 14
 
+//ESP32
+#define MAX_CONNECTION_ATTEMPTS 3
+
 /* Pin Definitions */
 #define BUTTON_PIN         GPIO_PIN_13
 #define REED_SWITCH_PIN    GPIO_PIN_8

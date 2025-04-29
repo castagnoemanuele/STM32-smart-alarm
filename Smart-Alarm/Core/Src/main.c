@@ -71,6 +71,7 @@ void check_pincode(void);
 void TriggerAlarm(void);
 void StopAlarm(void);
 void HandleReedSwitch(void);
+void esp32getIP(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -108,25 +109,9 @@ int main(void) {
     HAL_Delay(1000);
 
     // Get IP from ESP32
-    int max_attempts = 3;
-    for (int attempt = 1; attempt <= max_attempts; attempt++) {
-        HAL_StatusTypeDef status = HAL_I2C_Master_Receive(&hi2c1, (I2C_ADDR << 1),
-                (uint8_t*)rx_data, DATA_SIZE - 1, HAL_MAX_DELAY);
+    esp32getIP();
 
-        if (status == HAL_OK) {
-            rx_data[DATA_SIZE - 1] = '\0';
-            strncpy(device_ip, rx_data, sizeof(device_ip));
-            device_ip[sizeof(device_ip) - 1] = '\0';
 
-            if (is_valid_ip(device_ip)) {
-                printf("\nReceived valid IP: %s\n", device_ip);
-                Display_IPAddress(device_ip);
-                HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
-                HAL_Delay(100);
-                break;
-            }
-        }
-    }
 
     HAL_Delay(1000);
     // Show system status
@@ -457,6 +442,27 @@ int ScanI2CDevices(void) {
 
 	HAL_UART_Transmit(&huart2, EndMSG, sizeof(EndMSG), 10000);
 	return found;
+}
+
+void esp32getIP(void){
+	for (int attempt = 1; attempt <= MAX_CONNECTION_ATTEMPTS; attempt++) {
+	        HAL_StatusTypeDef status = HAL_I2C_Master_Receive(&hi2c1, (I2C_ADDR << 1),
+	                (uint8_t*)rx_data, DATA_SIZE - 1, HAL_MAX_DELAY);
+
+	        if (status == HAL_OK) {
+	            rx_data[DATA_SIZE - 1] = '\0';
+	            strncpy(device_ip, rx_data, sizeof(device_ip));
+	            device_ip[sizeof(device_ip) - 1] = '\0';
+
+	            if (is_valid_ip(device_ip)) {
+	                printf("\nReceived valid IP: %s\n", device_ip);
+	                Display_IPAddress(device_ip);
+	                HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
+	                HAL_Delay(100);
+	                break;
+	            }
+	        }
+	    }
 }
 
 bool is_valid_ip(const char *ip) {
