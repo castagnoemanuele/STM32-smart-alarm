@@ -42,7 +42,7 @@ void setup() {
 
     if (!res) {
         Serial.println("Failed to connect to WiFi");
-        // ESP.restart();
+        ESP.restart();
     } else {
         Serial.println("Connected to WiFi");
         digitalWrite(LED_BUILTIN, HIGH);

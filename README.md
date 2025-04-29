@@ -40,12 +40,14 @@ A detailed schematic and workflow diagram will be added in future updates.
 - [x] Initialize display
 - [x] Add support for multiple PIN codes (saving to FLASH).
 - [ ] Implement Pin Setting procedure
-- [ ] Display current informations on display function
-- [ ] Implement alarm function (Sound + Light)
+- [x] Display current informations on display function
+- [x] Implement alarm function (Sound + Light) and arming and disarming the system
 - [ ] Implement RFID authentication logic.
-- [ ] Implement Reed switch control via interrupt
+- [x] Implement Reed switch control via interrupt
 - [ ] Integrate motion sensor functionality.
-- [ ] Implement connection via Serial with the ESP32
+- [x] Implement connection via I2C with the ESP32
+- [ ] 
+- [ ] Improve code modularity
 
 
 ### Firmware - ESP32:
