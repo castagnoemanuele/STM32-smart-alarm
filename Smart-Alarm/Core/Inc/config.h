@@ -8,17 +8,19 @@
 #define LOCKOUT_TIME_MS 30000
 #define KEY_DEBOUNCE_MS 500
 #define REED_DEBOUNCE_MS 200
-#define DATA_SIZE 14
 
-//ESP32
+
+//ESP32 Communication related
 #define MAX_CONNECTION_ATTEMPTS 3
+#define DATA_SIZE 20
+#define I2C_ADDR 0x5C
 
 /* Pin Definitions */
 #define BUTTON_PIN         GPIO_PIN_13
 #define REED_SWITCH_PIN    GPIO_PIN_8
 #define BUZZER_PIN         GPIO_PIN_10
 #define ESP32_EN           GPIO_PIN_5
-#define LD2_PIN            LD2_Pin
+#define LD2_PIN            6
 
 // Keypad Rows (PB0, PB1, PB2, PB10)
 #define ROW1_PIN   GPIO_PIN_0
@@ -42,7 +44,7 @@ static const char keypad[4][4] = {
     {'*', '0', '#', 'D'}
 };
 
-/* I2C Addresses */
-#define I2C_ADDR 0x5C
+
+
 
 #endif /* CONFIG_H */

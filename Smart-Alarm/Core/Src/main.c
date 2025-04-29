@@ -446,8 +446,8 @@ int ScanI2CDevices(void) {
 
 void esp32getIP(void){
 	for (int attempt = 1; attempt <= MAX_CONNECTION_ATTEMPTS; attempt++) {
-	        HAL_StatusTypeDef status = HAL_I2C_Master_Receive(&hi2c1, (I2C_ADDR << 1),
-	                (uint8_t*)rx_data, DATA_SIZE - 1, HAL_MAX_DELAY);
+	        HAL_StatusTypeDef status = HAL_I2C_Master_Receive(&hi2c1, (I2C_ADDR << 1), (uint8_t*)rx_data, DATA_SIZE, HAL_MAX_DELAY);
+
 
 	        if (status == HAL_OK) {
 	            rx_data[DATA_SIZE - 1] = '\0';
@@ -457,7 +457,7 @@ void esp32getIP(void){
 	            if (is_valid_ip(device_ip)) {
 	                printf("\nReceived valid IP: %s\n", device_ip);
 	                Display_IPAddress(device_ip);
-	                HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
+	                HAL_GPIO_TogglePin(GPIOA, 6);
 	                HAL_Delay(100);
 	                break;
 	            }

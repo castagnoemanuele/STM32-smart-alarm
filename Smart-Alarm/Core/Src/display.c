@@ -109,7 +109,7 @@ void Display_IPAddress(const char* ip) {
     ssd1306_SetCursor(0, 40);
     ssd1306_WriteString("IP:", Font_7x10, White);
     ssd1306_SetCursor(30, 40);
-    ssd1306_WriteString(ip, Font_7x10, White);
+    ssd1306_WriteString(ip, Font_6x8, White);
     Display_Update();
     HAL_Delay(1000);
 }
