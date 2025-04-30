@@ -9,7 +9,6 @@
 #define KEY_DEBOUNCE_MS 500
 #define REED_DEBOUNCE_MS 200
 
-
 //ESP32 Communication related
 #define MAX_CONNECTION_ATTEMPTS 3
 #define DATA_SIZE 20
@@ -37,14 +36,7 @@
 #define COL_PORT   GPIOC
 
 // Keypad matrix definition
-static const char keypad[4][4] = {
-    {'1', '2', '3', 'A'},
-    {'4', '5', '6', 'B'},
-    {'7', '8', '9', 'C'},
-    {'*', '0', '#', 'D'}
-};
-
-
-
+static const char keypad[4][4] = { { '1', '2', '3', 'A' },
+		{ '4', '5', '6', 'B' }, { '7', '8', '9', 'C' }, { '*', '0', '#', 'D' } };
 
 #endif /* CONFIG_H */
