@@ -6,7 +6,8 @@
 #define SCL_PIN 39
 #define I2C_ADDRESS 0x5C // I2C address of the slave device
 
-void setup() {
+void setup()
+{
     /////////////////////SERIAL///////////////////////
     Serial.begin(115200);
     delay(1000); // Give time for serial monitor to open
@@ -40,27 +41,34 @@ void setup() {
     WiFiManager wm;
     bool res = wm.autoConnect("AutoConnectAP", "password");
 
-    if (!res) {
+    if (!res)
+    {
         Serial.println("Failed to connect to WiFi");
-        //ESP.restart();
-    } else {
+        // ESP.restart();
+    }
+    else
+    {
         Serial.println("Connected to WiFi");
         digitalWrite(LED_BUILTIN, HIGH);
     }
 }
 
-void loop() {
+void loop()
+{
     static uint8_t data[128];
     static size_t data_len = 0;
+    static unsigned long lastBlink = 0;
 
     // Handle incoming data
     data_len = i2c_slave_read_buffer(I2C_NUM_0, data, sizeof(data), 10 / portTICK_PERIOD_MS);
-    if (data_len > 0) {
+    if (data_len > 0)
+    {
         Serial.print("Received ");
         Serial.print(data_len);
         Serial.println(" byte(s):");
 
-        for (size_t i = 0; i < data_len; i++) {
+        for (size_t i = 0; i < data_len; i++)
+        {
             Serial.print("Received char: ");
             Serial.println((char)data[i]);
 
@@ -70,44 +78,41 @@ void loop() {
             digitalWrite(LED_BUILTIN, HIGH);
             delay(100);
 
-            if (data[i] == '1') {
+            if (data[i] == '1')
+            {
                 Serial.println("Command 1 received: Ready to send IP on request.");
-            } else if (data[i] == '2') {
+            }
+            else if (data[i] == '2')
+            {
                 Serial.println("Command 2 received: [You can handle it here]");
-            } else {
+            }
+            else
+            {
                 Serial.println("Unknown command received.");
             }
         }
     }
 
     // Handle master request
-    if (data_len == 0) {
+    if (data_len == 0)
+    {
         String ipAddress = WiFi.localIP().toString();
         size_t ip_len = ipAddress.length();
-        for (size_t i = 0; i < ip_len; i++) {
+        for (size_t i = 0; i < ip_len; i++)
+        {
             data[i] = ipAddress[i];
         }
         data[ip_len] = '\n'; // End of transmission
 
         i2c_slave_write_buffer(I2C_NUM_0, data, ip_len + 1, 10 / portTICK_PERIOD_MS);
 
-        // Flash LED rapidly to indicate data sent
-        for (int i = 0; i < 3; i++) {
-            digitalWrite(LED_BUILTIN, LOW);
-            delay(100);
-            digitalWrite(LED_BUILTIN, HIGH);
-            delay(100);
-        }
-
         Serial.println("Master requested data. Sent IP: " + ipAddress);
     }
 
-    // Blink to signal activity every 2 seconds
-    static unsigned long lastBlink = 0;
-    if (millis() - lastBlink > 2000) {
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(100);
-        digitalWrite(LED_BUILTIN, HIGH);
+    // Blink LED every 100ms (0.05s on, 0.05s off)
+    if (millis() - lastBlink > 100)
+    {
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // Toggle LED state
         lastBlink = millis();
-    }
+     }
 }

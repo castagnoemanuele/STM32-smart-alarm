@@ -110,7 +110,7 @@ int __io_putchar(int ch) {
 int main(void) {
 
 	/* USER CODE BEGIN 1 */
-	uint8_t data[] = {0xFF, 0x0};
+	uint8_t data[] = { 0xFF, 0x0 };
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -166,8 +166,9 @@ int main(void) {
 	char pressed_key = '\0';
 	if (wifi_connected) {
 		HAL_TIM_Base_Start(&htim1);
-		  HAL_DMA_Start(&hdma_tim1_up, (uint32_t)data, (uint32_t)&GPIOA->ODR, 5);
-		  __HAL_TIM_ENABLE_DMA(&htim1, TIM_DMA_UPDATE);
+		HAL_DMA_Start(&hdma_tim1_up, (uint32_t) data, (uint32_t) &GPIOA->ODR,
+				5);
+		__HAL_TIM_ENABLE_DMA(&htim1, TIM_DMA_UPDATE);
 	}
 	/* USER CODE END 2 */
 
@@ -319,7 +320,7 @@ static void MX_TIM1_Init(void) {
 
 	/* USER CODE END TIM1_Init 1 */
 	htim1.Instance = TIM1;
-	htim1.Init.Prescaler = 15999;
+	htim1.Init.Prescaler = 8399;
 	htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
 	htim1.Init.Period = 499;
 	htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
