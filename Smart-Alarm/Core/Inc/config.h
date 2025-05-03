@@ -19,7 +19,10 @@
 #define REED_SWITCH_PIN    GPIO_PIN_8
 #define BUZZER_PIN         GPIO_PIN_10
 #define ESP32_EN           GPIO_PIN_5
-#define LD2_PIN            6
+
+// Integrated LED
+#define LD2_Pin GPIO_PIN_5
+#define LD2_GPIO_Port GPIOA
 
 // Keypad Rows (PB0, PB1, PB2, PB10)
 #define ROW1_PIN   GPIO_PIN_0
