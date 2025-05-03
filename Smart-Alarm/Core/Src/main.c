@@ -24,9 +24,10 @@
 #include "config.h"
 #include "display.h"
 #include "flashMemory.h"
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include "stdio.h"
+#include "string.h"
+#include "ctype.h"
+#include "pinCode.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,12 +64,7 @@ char last_key = '\0';
 uint32_t last_key_time = 0;
 uint32_t last_reed_time = 0;
 
-char entered_pincode[PINCODE_LENGTH + 1] = { 0 };
-uint8_t pincode_position = 0;
-uint8_t pin_attempts = 0;
-uint32_t lockout_start = 0;
-bool system_locked = false;
-bool system_armed = false;
+PincodeState pincodeState;
 bool wifi_connected = false;
 char rx_data[DATA_SIZE];
 char device_ip[32];
@@ -87,7 +83,6 @@ int ScanI2CDevices(void);
 bool is_valid_ip(const char *ip);
 char scan_keypad(void);
 void handle_keypress(char key);
-void check_pincode(void);
 void TriggerAlarm(void);
 void StopAlarm(void);
 void HandleReedSwitch(void);
@@ -139,6 +134,7 @@ int main(void) {
 	/* USER CODE BEGIN 2 */
 	Display_Init();
 	Display_BootMessage();
+	Pincode_Init(&pincodeState);
 
 	HAL_GPIO_WritePin(GPIOA, 6, GPIO_PIN_SET);
 
@@ -160,7 +156,7 @@ int main(void) {
 
 	HAL_Delay(1000);
 	// Show system status
-	Display_SystemStatus(system_armed);
+	Display_SystemStatus(pincodeState.system_armed);
 	uint32_t start_time = 0;
 	bool toggle = false;
 	char pressed_key = '\0';
@@ -178,15 +174,15 @@ int main(void) {
 
 	while (1) {
 		// Check if system is locked
-		if (system_locked) {
+		if (pincodeState.system_locked) {
 			uint32_t remaining = (LOCKOUT_TIME_MS
-					- (HAL_GetTick() - lockout_start)) / 1000;
+					- (HAL_GetTick() - pincodeState.lockout_start)) / 1000;
 			Display_LockedScreen(remaining);
 
-			if ((HAL_GetTick() - lockout_start) >= LOCKOUT_TIME_MS) {
-				system_locked = false;
-				pin_attempts = 0;
-				Display_SystemStatus(system_armed);
+			if ((HAL_GetTick() - pincodeState.lockout_start) >= LOCKOUT_TIME_MS) {
+				pincodeState.system_locked = false;
+				pincodeState.pin_attempts = 0;
+				Display_SystemStatus(pincodeState.system_armed);
 			}
 			HAL_Delay(100);
 			continue;
@@ -462,7 +458,7 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOB,
-			GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_5,
+	GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_5,
 			GPIO_PIN_RESET);
 
 	/*Configure GPIO pin : B1_Pin */
@@ -521,7 +517,7 @@ static void MX_GPIO_Init(void) {
 void EXTI15_10_IRQHandler(void) {
 	if (__HAL_GPIO_EXTI_GET_IT(BUTTON_PIN) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(BUTTON_PIN);
-		if (system_armed) {
+		if (pincodeState.system_armed) {
 			TriggerAlarm();
 		}
 	}
@@ -538,7 +534,7 @@ void EXTI9_5_IRQHandler(void) {
 }
 
 void HandleReedSwitch(void) {
-	if (reed_triggered && system_armed) {
+	if (reed_triggered && pincodeState.system_armed) {
 		reed_triggered = 0;
 		TriggerAlarm();
 	}
@@ -554,7 +550,7 @@ void StopAlarm(void) {
 	HAL_GPIO_WritePin(GPIOA, BUZZER_PIN, GPIO_PIN_RESET);
 	ssd1306_Fill(Black);
 	ssd1306_UpdateScreen();
-	Display_SystemStatus(system_armed);
+	Display_SystemStatus(pincodeState.system_armed);
 }
 
 int ScanI2CDevices(void) {
@@ -705,75 +701,59 @@ void handle_keypress(char key) {
 
 	switch (key) {
 	case 'A':
-		if (!system_armed && !system_locked) {
-			pincode_position = 0;
-			memset(entered_pincode, 0, sizeof(entered_pincode));
-			Display_EnterPincode(pincode_position, entered_pincode);
+		if (!pincodeState.system_armed && !pincodeState.system_locked) {
+			pincodeState.pincode_position = 0;
+			memset(pincodeState.entered_pincode, 0,
+					sizeof(pincodeState.entered_pincode));
+			Display_EnterPincode(pincodeState.pincode_position,
+					pincodeState.entered_pincode);
 		}
 		break;
 
 	case 'B':
-		if (system_armed && !system_locked) {
-			pincode_position = 0;
-			memset(entered_pincode, 0, sizeof(entered_pincode));
-			Display_EnterPincode(pincode_position, entered_pincode);
+		if (pincodeState.system_armed && !pincodeState.system_locked) {
+			pincodeState.pincode_position = 0;
+			memset(pincodeState.entered_pincode, 0,
+					sizeof(pincodeState.entered_pincode));
+			Display_EnterPincode(pincodeState.pincode_position,
+					pincodeState.entered_pincode);
 		}
 		break;
 
 	case 'C':
-		pincode_position = 0;
-		memset(entered_pincode, 0, sizeof(entered_pincode));
-		Display_SystemStatus(system_armed);
+		pincodeState.pincode_position = 0;
+		memset(pincodeState.entered_pincode, 0,
+				sizeof(pincodeState.entered_pincode));
+		Display_SystemStatus(pincodeState.system_armed);
 		break;
 
 	case 'D':
-		if (pincode_position == PINCODE_LENGTH) {
-			check_pincode();
+		if (pincodeState.pincode_position == PINCODE_LENGTH) {
+			Pincode_Check(&pincodeState);
 		}
 		break;
 
 	case '*':
-		pincode_position = 0;
-		memset(entered_pincode, 0, sizeof(entered_pincode));
-		Display_EnterPincode(pincode_position, entered_pincode);
+		pincodeState.pincode_position = 0;
+		memset(pincodeState.entered_pincode, 0,
+				sizeof(pincodeState.entered_pincode));
+		Display_EnterPincode(pincodeState.pincode_position,
+				pincodeState.entered_pincode);
 		break;
 
 	case '#':
 		break;
 
 	default:
-		if (pincode_position < PINCODE_LENGTH && isdigit(key)) {
-			entered_pincode[pincode_position++] = key;
-			Display_EnterPincode(pincode_position, entered_pincode);
+		if (pincodeState.pincode_position < PINCODE_LENGTH && isdigit(key)) {
+			pincodeState.entered_pincode[pincodeState.pincode_position++] = key;
+			Display_EnterPincode(pincodeState.pincode_position,
+					pincodeState.entered_pincode);
 		}
 		break;
 	}
 }
 
-void check_pincode(void) {
-	uint32_t stored_pincode = ReadFromFlash(address1);
-	char stored_pincode_str[PINCODE_LENGTH + 1];
-	sprintf(stored_pincode_str, "%04lu", stored_pincode);
-
-	if (strncmp(entered_pincode, stored_pincode_str, PINCODE_LENGTH) == 0) {
-		pin_attempts = 0;
-		system_armed = !system_armed;
-		Display_AccessGranted();
-		Display_SystemStatus(system_armed);
-	} else {
-		pin_attempts++;
-		if (pin_attempts >= MAX_PIN_ATTEMPTS) {
-			system_locked = true;
-			lockout_start = HAL_GetTick();
-			Display_LockedScreen(LOCKOUT_TIME_MS / 1000);
-		} else {
-			Display_AccessDenied();
-			pincode_position = 0;
-			memset(entered_pincode, 0, sizeof(entered_pincode));
-			Display_EnterPincode(pincode_position, entered_pincode);
-		}
-	}
-}
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
 	if (htim->Instance == TIM2) {
 		printf("DMA transfer completed for TIM2_CH1.\n");
