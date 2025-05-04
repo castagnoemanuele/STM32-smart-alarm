@@ -68,6 +68,7 @@ A detailed schematic and workflow diagram will be added in future updates.
 
 This project makes use of the following open-source libraries:
 - [STM32 SSD1306 library](https://github.com/afiskon/stm32-ssd1306): For interfacing with the OLED display.
+- [RFID-MIFARE-RC522-ARM-STM32](https://github.com/Hamid-R-Tanhaei/RFID-MIFARE-RC522-ARM-STM32/tree/main): For interfacing with the RC522 RFID scanner
 - [WiFiManager](https://github.com/tzapu/WiFiManager): Simplifies WiFi connectivity setup.
 
 ## Installation and Setup

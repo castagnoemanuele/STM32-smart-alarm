@@ -24,6 +24,12 @@
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
 
+// RC522 pins
+#define RC522_Rst_Pin GPIO_PIN_15
+#define RC522_Rst_GPIO_Port GPIOA
+#define RC522_CS_Pin GPIO_PIN_2
+#define RC522_CS_GPIO_Port GPIOD
+
 // Keypad Rows (PB0, PB1, PB2, PB10)
 #define ROW1_PIN   GPIO_PIN_0
 #define ROW2_PIN   GPIO_PIN_1
