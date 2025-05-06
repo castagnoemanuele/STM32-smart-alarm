@@ -109,7 +109,8 @@ This project makes use of the following open-source libraries:
 - Monitor system status on the OLED display.
 
 ## Notes
-- The standard <wire.h> library gave us many problems when using the esp32 as a slave devicce on the i2c bus. Changing the <Wire.h> to the standard <drivers/i2c.h> solved these problems.
+- For the ESP32 firmware the standard <wire.h> library gave us many problems when using the esp32 as a slave devicce on the i2c bus. Changing the <Wire.h> to the standard <drivers/i2c.h> solved these problems.
+- For the STM32, getting the RC522 to work was a lot of trouble, probably because our card reader was a cheap clone. Out of many things, to get it to work we had to set the SPI prescaler to 32, because the default value was too high for the RC522. Also it is possible that powering the chip with 5v instead of 3.3v helped.
 
 ## License
 
