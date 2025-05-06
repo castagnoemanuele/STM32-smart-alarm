@@ -32,6 +32,14 @@ The smart alarm system is divided into two main components:
 A detailed schematic and workflow diagram will be added in future updates.
 ![Wiring](Assets/wiring.png)
 
+# Features
+## 4x4 button matrix
+The 4x4 button matrix, also reffered to as the keypad in the code, is used to input the pincode to authenticate the user after he presented his badge.
+![Keypad](Assets/keypad.gif)
+[Credits - Antonio Mancuso's Blog](https://www.google.com/url?sa=i&url=https%3A%2F%2Fmancusoa74.blogspot.com%2F2017%2F02%2Fscratch-e-arduino-progetto-6-tastierino.html&psig=AOvVaw3JqhFhCt8b6yLJ_VM6Uewu&ust=1746618144848000&source=images&cd=vfe&opi=89978449&ved=0CAMQjB1qFwoTCIj25uPhjo0DFQAAAAAdAAAAABAE)
+
+
+
 ## To Do
 
 ### Hardware:
