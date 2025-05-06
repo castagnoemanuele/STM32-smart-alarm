@@ -7,6 +7,8 @@ Smart alarm security system based on STM32 as the main microcontroller. It is in
 This project is a smart alarm system designed to enhance home or office security. The system utilizes an STM32 microcontroller in conjunction with various sensors and modules to detect unauthorized access and notify users over WiFi. Features include keypad entry, RFID authentication, motion detection, and more.
 
 
+[![Demo video on youtube](https://img.youtube.com/vi/71LS64RbG-M/hqdefault.jpg)](https://www.youtube.com/watch?v=VkK-71LS64RbG-M)
+
 
 ## Components
 
@@ -33,11 +35,26 @@ A detailed schematic and workflow diagram will be added in future updates.
 
 # Features
 ## 4x4 button matrix
-The 4x4 button matrix, also reffered to as the keypad in the code, is used to input the pincode to authenticate the user after he presented his badge.
-![Keypad](Assets/keypad.gif)
+The 4x4 button matrix, also reffered to as the keypad in the code, is used to input the pincode to authenticate the user after he has presented his badge. it has 8 pins, 4 of these will be used as inputs, while the others will be used as outputs.
+
+![Keypad](Assets/keypad.gif) 
+
 [Credits - Antonio Mancuso's Blog](https://www.google.com/url?sa=i&url=https%3A%2F%2Fmancusoa74.blogspot.com%2F2017%2F02%2Fscratch-e-arduino-progetto-6-tastierino.html&psig=AOvVaw3JqhFhCt8b6yLJ_VM6Uewu&ust=1746618144848000&source=images&cd=vfe&opi=89978449&ved=0CAMQjB1qFwoTCIj25uPhjo0DFQAAAAAdAAAAABAE)
 
+The operation principle of the keypad is as picured above: the microcontroller activates one of the rows (which are the inputs of the keypad, connected to optput pins of the microcontroller) and then begins to check the outputs. If one of them is founs HIGH, then the apposite functions registers the input as described by this matrix:
+```
+   static const char keypad[4][4] = {
+	     { '1', '2', '3', 'A' },
+	     { '4', '5', '6', 'B' },
+	     { '7', '8', '9', 'C' },
+	     { '*', '0', '#', 'D' }
+   };    
+```
+This check is performed in polling mode.
 
+## RFID Card reader
+
+## 
 
 ## To Do
 
