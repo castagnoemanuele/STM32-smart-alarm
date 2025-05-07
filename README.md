@@ -24,6 +24,8 @@ The following hardware components are used in this project:
 
 ## Architecture
 
+![Block_diagram](Assets/block-diagram.svg)
+
 The smart alarm system is divided into two main components:
 1. **STM32 Microcontroller**:
    - Handles sensor inputs, alarm logic, and display control.
