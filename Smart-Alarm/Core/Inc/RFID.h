@@ -132,5 +132,17 @@ uint8_t MFRC522_Read(uint8_t, uint8_t*);
 uint8_t MFRC522_Write(uint8_t, uint8_t*);
 void MFRC522_Halt();
 void MFRC522_StopCrypto1(void);
+void checkRFID();
+
+//RFID Variables
+extern uint8_t RFIDstatus, cardstr[MAX_LEN + 1];
+extern uint8_t card_data[17];
+extern uint32_t delay_val;
+extern uint16_t result;
+extern uint8_t UID[5];
+extern uint8_t Mx1[7][5];
+extern uint8_t SectorKey[7];
+extern int RFIDtempcount;
+
 
 #endif /* __RFID_H */
