@@ -9,6 +9,13 @@
 #define KEY_DEBOUNCE_MS 500
 #define REED_DEBOUNCE_MS 200
 
+//Nonblocking delays intervals
+#define WIFI_CHECK_INTERVAL 2000 // 2 sec
+#define RFID_CHECK_INTERVAL 50   // 50 ms
+#define KEYPAD_SCAN_INTERVAL 50  // 50 ms
+#define REED_CHECK_INTERVAL 100  // 100 ms
+#define ALARM_TOGGLE_INTERVAL 100 // 100 ms
+
 //ESP32 Communication related
 #define MAX_CONNECTION_ATTEMPTS 3
 #define DATA_SIZE 20

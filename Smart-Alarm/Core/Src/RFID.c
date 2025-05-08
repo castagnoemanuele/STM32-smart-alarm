@@ -586,97 +586,121 @@ void MFRC522_StopCrypto1(void) {
 } // End PCD_StopCrypto1()
 
 
-void checkRFID() {
+// Non-blocking RFID check function using state machine
+#include "main.h"
+
+// RFID States
+typedef enum {
+    RFID_STATE_IDLE,
+    RFID_STATE_REQUEST,
+    RFID_STATE_ANTICOLL,
+    RFID_STATE_SELECT,
+    RFID_STATE_AUTH,
+    RFID_STATE_WRITE,
+    RFID_STATE_DONE
+} RFID_State;
+
+static RFID_State rfid_state = RFID_STATE_IDLE;
+static uint8_t uid[5] = {0};
+static uint8_t sectorKey[6];
+static uint8_t cardData[16];
+static uint32_t lastPrintTick = 0;
+
+void checkRFID(void) {
     uint8_t status;
-    uint8_t uid[5] = {0};
-    uint8_t sak;
-    uint8_t sectorKey[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    uint8_t cardData[16];
+    uint32_t now = HAL_GetTick();
 
-    static uint32_t lastTick = 0;
-    static uint8_t messagePrinted = 0;
+    switch (rfid_state) {
 
-    // Step 1: Look for cards (non-blocking)
-        if (!messagePrinted) {
-            printf("No card found, waiting for card...");
-            messagePrinted = 1;
-        }
+        case RFID_STATE_IDLE:
+            if (now - lastPrintTick >= 1000) {
+                printf("No card found, waiting...\n");
+                lastPrintTick = now;
+            }
+            rfid_state = RFID_STATE_REQUEST;
+            break;
 
-        while (1) {
+        case RFID_STATE_REQUEST:
             status = MFRC522_Request(PICC_REQIDL, cardstr);
             if (status == MI_OK) {
-                printf("\r\nCard detected!\r\n");
-                break;
+                printf("Card detected!\n");
+                rfid_state = RFID_STATE_ANTICOLL;
             }
+            break;
 
-            if (HAL_GetTick() - lastTick >= 1000) {
-                printf(".");
-                lastTick = HAL_GetTick();
+        case RFID_STATE_ANTICOLL:
+            status = MFRC522_Anticoll(uid);
+            if (status == MI_OK) {
+                printf("UID: %02X %02X %02X %02X\n", uid[0], uid[1], uid[2], uid[3]);
+                rfid_state = RFID_STATE_SELECT;
+            } else {
+                printf("Anti-collision failed.\n");
+                rfid_state = RFID_STATE_IDLE;
             }
-        }
+            break;
 
-    // Step 2: Anti-collision to get UID
-    status = MFRC522_Anticoll(uid);
-    if (status != MI_OK) {
-        printf("Anti-collision failed.\r\n");
-        return;
+        case RFID_STATE_SELECT:
+            status = MFRC522_SelectTag(uid);
+            if (status != 0) {
+                // Generate key
+                for (int i = 0; i < 6; i++) {
+                    sectorKey[i] = uid[i % 4] ^ 0xA5;
+                }
+                rfid_state = RFID_STATE_AUTH;
+            } else {
+                printf("Card select failed.\n");
+                rfid_state = RFID_STATE_IDLE;
+            }
+            break;
+
+        case RFID_STATE_AUTH:
+            status = MFRC522_Auth(0x60, 3, sectorKey, uid);
+            if (status == MI_OK) {
+                printf("Authentication OK!\n");
+                rfid_state = RFID_STATE_WRITE;
+            } else {
+                printf("Authentication failed.\n");
+                MFRC522_StopCrypto1();
+                rfid_state = RFID_STATE_IDLE;
+            }
+            break;
+
+        case RFID_STATE_WRITE:
+            if (HAL_GPIO_ReadPin(GPIOC, BUTTON_PIN) == GPIO_PIN_RESET) {
+                memset(cardData, 0x88, sizeof(cardData));
+                cardData[6] = 0xFF;
+                cardData[7] = 0x07;
+                cardData[8] = 0x80;
+
+                status = MFRC522_Write(3, cardData);
+                if (status == MI_OK) {
+                    printf("Card cleared!\n");
+                } else {
+                    printf("Failed to write card.\n");
+                }
+            } else {
+                for (int i = 0; i < 6; i++) {
+                    cardData[i] = uid[i % 4] ^ 0x5A;
+                }
+                cardData[6] = 0xFF;
+                cardData[7] = 0x07;
+                cardData[8] = 0x80;
+                memset(&cardData[9], 0x88, 7);
+
+                status = MFRC522_Write(3, cardData);
+                if (status == MI_OK) {
+                    printf("Card programmed!\n");
+                } else {
+                    printf("Failed to program card.\n");
+                }
+            }
+            MFRC522_StopCrypto1();
+            MFRC522_Halt();
+            rfid_state = RFID_STATE_DONE;
+            break;
+
+        case RFID_STATE_DONE:
+            rfid_state = RFID_STATE_IDLE;
+            break;
     }
-    printf("UID: %02X %02X %02X %02X\r\n", uid[0], uid[1], uid[2], uid[3]);
-
-    // Step 3: Select the tag
-    status = MFRC522_SelectTag(uid);
-    if (status == 0) {
-        printf("Card select failed.\r\n");
-        return;
-    }
-
-    // Optional: Generate custom key
-    for (int i = 0; i < 6; i++) {
-        sectorKey[i] = uid[i % 4] ^ 0xA5;
-    }
-
-    // Step 4: Authenticate sector 3
-    status = MFRC522_Auth(0x60, 3, sectorKey, uid);
-    if (status != MI_OK) {
-        printf("Authentication failed.\r\n");
-        MFRC522_StopCrypto1();
-        return;
-    }
-    printf("Authentication OK!\r\n");
-
-    // Step 5: Check button press
-    if (HAL_GPIO_ReadPin(GPIOC, BUTTON_PIN) == GPIO_PIN_RESET) {
-        // Clear card data
-        memset(cardData, 0x88, sizeof(cardData)); // Fill with 0x88
-        cardData[6] = 0xFF;
-        cardData[7] = 0x07;
-        cardData[8] = 0x80;
-
-        status = MFRC522_Write(3, cardData);
-        if (status == MI_OK) {
-            printf("Card cleared!\r\n");
-        } else {
-            printf("Failed to write card.\r\n");
-        }
-    } else {
-        // Write UID-based data
-        for (int i = 0; i < 6; i++) {
-            cardData[i] = uid[i % 4] ^ 0x5A;
-        }
-        cardData[6] = 0xFF;
-        cardData[7] = 0x07;
-        cardData[8] = 0x80;
-        memset(&cardData[9], 0x88, 7);
-
-        status = MFRC522_Write(3, cardData);
-        if (status == MI_OK) {
-            printf("Card programmed!\r\n");
-        } else {
-            printf("Failed to program card.\r\n");
-        }
-    }
-
-    // Step 6: Stop crypto and halt
-    MFRC522_StopCrypto1();
-    MFRC522_Halt();
 }

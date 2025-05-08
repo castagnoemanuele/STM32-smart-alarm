@@ -29,6 +29,7 @@
 #include "ctype.h"
 #include "pinCode.h"
 #include "RFID.h"
+#include "esp32.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,7 +71,7 @@ uint32_t last_reed_time = 0;
 PincodeState pincodeState;
 bool wifi_connected = false;
 char rx_data[DATA_SIZE];
-char device_ip[32];
+char device_ip[32]; //Used to store ip string from the ESP32
 
 uint8_t value = 0;
 char str1[17] = { '\0' };
@@ -78,6 +79,13 @@ char str2[17] = { '\0' };
 char str3[17] = { '\0' };
 char str4[17] = { '\0' };
 char tmp_str[65] = { '\0' };
+
+// Timing variables
+uint32_t last_keypad_scan = 0;
+uint32_t last_reed_check = 0;
+uint32_t last_alarm_toggle = 0;
+uint32_t last_rfid_check = 0;
+uint32_t last_wifi_check = 0;
 
 // Delay function:
 #define	Precise_Delay(x) {\
@@ -103,13 +111,13 @@ static void MX_TIM1_Init(void);
 static void MX_SPI3_Init(void);
 /* USER CODE BEGIN PFP */
 int ScanI2CDevices(void);
-bool is_valid_ip(const char *ip);
+
 char scan_keypad(void);
 void handle_keypress(char key);
 void TriggerAlarm(void);
 void StopAlarm(void);
 void HandleReedSwitch(void);
-void esp32getIP(void);
+void esp32getIP_nonblocking(void);
 
 /* USER CODE END PFP */
 
@@ -168,8 +176,7 @@ int main(void)
 	printf("Display initialized...\r\n");
 	Pincode_Init(&pincodeState);
 
-	//Initialize RFID
-	MFRC522_Init();
+
 
 	// Enable ESP32
 	HAL_GPIO_WritePin(GPIOB, ESP32_EN, GPIO_PIN_SET);
@@ -187,7 +194,8 @@ int main(void)
 
 	// Get IP from ESP32
 	printf("\nRequesting IP address to ESP32");
-	esp32getIP();
+	esp32getIP_nonblocking();
+
 
 	HAL_Delay(1000);
 	// Show system status
@@ -204,7 +212,21 @@ int main(void)
 
 
 	//
+	//Initialize RFID
+	printf("Resetting SPI...\n");
+	__HAL_RCC_SPI1_FORCE_RESET();  // Forza il reset dell'SPI
+	HAL_Delay(10);                 // Attendi 10ms
+	__HAL_RCC_SPI1_RELEASE_RESET(); // Rilascia il reset
+	HAL_SPI_Init(&hspi3);          // Reinizializza l'SPI
+	MFRC522_Init();                // Reinizializza il lettore RFID
+
+	HAL_GPIO_WritePin(RC522_Rst_GPIO_Port, RC522_Rst_Pin, GPIO_PIN_RESET);
+	HAL_Delay(10);
+	HAL_GPIO_WritePin(RC522_Rst_GPIO_Port, RC522_Rst_Pin, GPIO_PIN_SET);
+	HAL_Delay(10);
+	MFRC522_Init();  //
 	printf("\nSearching for an RC522\r\n");
+	HAL_Delay(1000);
 	RFIDstatus = Read_MFRC522(VersionReg);
 	sprintf(str1, "\nRunning RC522\r\n");
 	sprintf(str2, "\nver:%x\r\n", RFIDstatus);
@@ -217,52 +239,68 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	/* Main loop */
 
-	while (1) {
+	start_time = 0;
+	toggle = false;
 
-		// Check if system is locked
-		if (pincodeState.system_locked) {
-			uint32_t remaining = (LOCKOUT_TIME_MS
-					- (HAL_GetTick() - pincodeState.lockout_start)) / 1000;
-			Display_LockedScreen(remaining);
+	    while (1) {
+	        uint32_t now = HAL_GetTick();
 
-			if ((HAL_GetTick() - pincodeState.lockout_start) >= LOCKOUT_TIME_MS) {
-				pincodeState.system_locked = false;
-				pincodeState.pin_attempts = 0;
-				Display_SystemStatus(pincodeState.system_armed);
-			}
-			HAL_Delay(100);
-			continue;
-		}
+	        // Lock check
+	        if (pincodeState.system_locked) {
+	            uint32_t remaining = (LOCKOUT_TIME_MS - (now - pincodeState.lockout_start)) / 1000;
+	            Display_LockedScreen(remaining);
 
-		// Scan keypad
-		pressed_key = scan_keypad();
-		if (pressed_key != '\0') {
-			handle_keypress(pressed_key);
-		}
+	            if ((now - pincodeState.lockout_start) >= LOCKOUT_TIME_MS) {
+	                pincodeState.system_locked = false;
+	                pincodeState.pin_attempts = 0;
+	                Display_SystemStatus(pincodeState.system_armed);
+	            }
+	            continue;
+	        }
 
-		// Check reed switch status
-		HandleReedSwitch();
+	        // Keypad scan
+	        if (now - last_keypad_scan >= KEYPAD_SCAN_INTERVAL) {
+	            last_keypad_scan = now;
+	            char pressed_key = scan_keypad();
+	            if (pressed_key != '\0') {
+	                handle_keypress(pressed_key);
+	            }
+	        }
 
-		// Handle alarm
-		if (alarm_flag) {
-			if (start_time == 0) {
-				start_time = HAL_GetTick();
-			}
+	        // Reed switch
+	        if (now - last_reed_check >= REED_CHECK_INTERVAL) {
+	            last_reed_check = now;
+	            HandleReedSwitch();
+	        }
 
-			if (HAL_GetTick() - start_time < ALARM_DURATION_MS) {
-				HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
-				Display_AlarmScreen(toggle);
-				toggle = !toggle;
-				HAL_Delay(100);
-			} else {
-				StopAlarm();
-				start_time = 0;
-			}
-		}
+	        // Alarm
+	        if (alarm_flag) {
+	            if (start_time == 0) {
+	                start_time = now;
+	            }
 
-		HAL_Delay(10);
-		checkRFID();
-	}
+	            if (now - start_time < ALARM_DURATION_MS) {
+	                if (now - last_alarm_toggle >= ALARM_TOGGLE_INTERVAL) {
+	                    last_alarm_toggle = now;
+	                    HAL_GPIO_TogglePin(GPIOA, BUZZER_PIN);
+	                    Display_AlarmScreen(toggle);
+	                    toggle = !toggle;
+	                }
+	            } else {
+	                StopAlarm();
+	                start_time = 0;
+	            }
+	        }
+
+	        // RFID check
+	        if (now - last_rfid_check >= RFID_CHECK_INTERVAL) {
+	            last_rfid_check = now;
+	            checkRFID();
+	        }
+
+	        // WiFi check
+	        esp32getIP_nonblocking();
+	    }
 
     /* USER CODE END WHILE */
 
@@ -668,103 +706,97 @@ void StopAlarm(void) {
 }
 
 int ScanI2CDevices(void) {
-	const char StartMSG[] = "Starting I2C scan...\r\n";
-	const char EndMSG[] = "I2C scan complete.\r\n";
-	const uint8_t Space[] = " ";
-	char Buffer[32];
+    const char StartMSG[] = "Starting I2C scan...\r\n";
+    const char EndMSG[] = "\r\nI2C scan complete.\r\n";
+    const char Space[] = " ";
+    char Buffer[32];
 
-	uint8_t i, ret;
-	char buffer[16];
-	int found = 0;
+    uint8_t i, ret;
+    char buffer[16];
+    int found = 0;
 
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(0, 0);
-	ssd1306_WriteString("I2C Scan:", Font_7x10, White);
-	ssd1306_UpdateScreen();
+    ssd1306_Fill(Black);
+    ssd1306_SetCursor(0, 0);
+    ssd1306_WriteString("I2C Scan:", Font_7x10, White);
+    ssd1306_UpdateScreen();
 
-	HAL_Delay(500);
+    HAL_Delay(500);
 
-	printf("%s", StartMSG);
+    printf("%s", StartMSG);
 
-	for (i = 1; i < 128; i++) {
-		ret = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t) (i << 1), 3, 5);
-		if (ret == HAL_OK) {
-			sprintf(Buffer, "0x%X", i);
-			HAL_UART_Transmit(&huart2, Buffer, sizeof(Buffer), 10000);
+    for (i = 1; i < 128; i++) {
+        ret = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t) (i << 1), 3, 5);
+        if (ret == HAL_OK) {
+            int len = sprintf(Buffer, "0x%02X ", i);
+            HAL_UART_Transmit(&huart2, (uint8_t*)Buffer, len, 100);
 
-			sprintf(buffer, "Found: 0x%02X", i);
-			ssd1306_SetCursor(0, 16 + found * 10);
-			ssd1306_WriteString(buffer, Font_6x8, White);
-			ssd1306_UpdateScreen();
+            sprintf(buffer, "Found: 0x%02X", i);
+            ssd1306_SetCursor(0, 16 + found * 10);
+            ssd1306_WriteString(buffer, Font_6x8, White);
+            ssd1306_UpdateScreen();
 
-			HAL_Delay(300);
-			found++;
-			if (found > 4)
-				break;
-		} else {
-			HAL_UART_Transmit(&huart2, Space, sizeof(Space), 10000);
-		}
-	}
+            HAL_Delay(300);
+            found++;
+            if (found > 4)
+                break;
+        } else {
+            HAL_UART_Transmit(&huart2, (uint8_t*)Space, 1, 100);
+        }
+    }
 
-	HAL_UART_Transmit(&huart2, EndMSG, sizeof(EndMSG), 10000);
-	return found;
+    HAL_UART_Transmit(&huart2, (uint8_t*)EndMSG, strlen(EndMSG), 100);
+    return found;
 }
 
-void esp32getIP(void) {
-	for (int attempt = 1; attempt <= MAX_CONNECTION_ATTEMPTS; attempt++) {
-		HAL_StatusTypeDef status = HAL_I2C_Master_Receive(&hi2c1,
-				(I2C_ADDR << 1), (uint8_t*) rx_data, DATA_SIZE, HAL_MAX_DELAY);
+void esp32getIP_nonblocking(void) {
+    HAL_StatusTypeDef status;
+    static uint8_t attempt = 0;
 
-		if (status == HAL_OK) {
-			rx_data[DATA_SIZE - 1] = '\0';
-			strncpy(device_ip, rx_data, sizeof(device_ip));
-			device_ip[sizeof(device_ip) - 1] = '\0';
+    // Only check every 2 sec
+    if (HAL_GetTick() - last_wifi_check < WIFI_CHECK_INTERVAL) {
+        return;
+    }
+    last_wifi_check = HAL_GetTick();
 
-			if (is_valid_ip(device_ip)) {
-				printf("\nReceived valid IP: %s\n", device_ip);
-				Display_IPAddress(device_ip);
-				HAL_GPIO_TogglePin(GPIOA, 6);
-				HAL_Delay(100);
-				wifi_connected = true;
-				break;
-			}
+    uint8_t rx_data[32];
+    status = HAL_I2C_Master_Receive(&hi2c1, (I2C_ADDR << 1), rx_data, 32, 100);
 
-		} else {
-			printf("\nNo IP address received\n");
-			strcpy(device_ip, "ERROR");
-			;
-			Display_IPAddress(device_ip);
-			HAL_Delay(200);
-		}
-	}
+    if (status == HAL_OK) {
+        rx_data[31] = '\0';
+
+        // Clean \r or \n
+        for (int i = 0; i < 32; i++) {
+            if (rx_data[i] == '\r' || rx_data[i] == '\n') {
+                rx_data[i] = '\0';
+                break;
+            }
+        }
+
+        strncpy(device_ip, (char *)rx_data, sizeof(device_ip));
+        device_ip[sizeof(device_ip) - 1] = '\0';
+
+        if (is_valid_ip(device_ip)) {
+            printf("\nReceived valid IP: %s\n", device_ip);
+            Display_IPAddress(device_ip);
+            wifi_connected = true;
+            attempt = 0;
+        } else {
+            printf("\nInvalid IP format received: %s\n", device_ip);
+            attempt++;
+        }
+    } else {
+        printf("\nNo IP address received (I2C error)\n");
+        attempt++;
+    }
+
+    if (attempt >= 5) {
+        strcpy(device_ip, "ERROR");
+        Display_IPAddress(device_ip);
+        attempt = 0;
+    }
 }
 
-bool is_valid_ip(const char *ip) {
-	int num, dots = 0;
-	char *ptr;
-	char ip_copy[32];
-	strncpy(ip_copy, ip, sizeof(ip_copy));
-	ip_copy[sizeof(ip_copy) - 1] = '\0';
 
-	ptr = strtok(ip_copy, ".");
-	if (ptr == NULL)
-		return false;
-
-	while (ptr) {
-		if (!isdigit(*ptr))
-			return false;
-
-		num = atoi(ptr);
-		if (num < 0 || num > 255)
-			return false;
-
-		ptr = strtok(NULL, ".");
-		if (ptr != NULL)
-			dots++;
-	}
-
-	return dots == 3;
-}
 
 char scan_keypad(void) {
 	char key = '\0';
