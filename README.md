@@ -75,14 +75,13 @@ This check is performed in polling mode.
 - [x] Implement Reed switch control via interrupt
 - [ ] Integrate motion sensor functionality.
 - [x] Implement connection via I2C with the ESP32
-- [ ] 
 - [ ] Improve code modularity
 
 
 ### Firmware - ESP32:
 - [x] Implement WiFi Connection
 - [x] Send IP/wifi information to STM32
-- [ ] Develop a feature to send notifications via WiFi.
+- [x] Develop a feature to send notifications via WiFi (WhatsApp using CallMeBot).
 
 ### Possible Future Enhancements:
 - [ ] Add a mobile app for remote control.
@@ -112,7 +111,7 @@ This project makes use of the following open-source libraries:
    ```
 
 2. **Hardware Setup**:
-   - Connect all components as per the provided schematic (to be added).
+   - Connect all components as per the provided schematic.
    - Ensure proper power supply and secure connections.
 
 3. **Flashing the STM32**:
@@ -123,9 +122,23 @@ This project makes use of the following open-source libraries:
    - Open the ESP32 code in Arduino IDE.
    - Compile and upload the code to the ESP32 S2 mini board.
 
-5. **WiFi Configuration**:
-   - When powered on, the ESP32 will start in AP mode.
+5. **WhatsApp Notification Setup**:
+   - To receive WhatsApp notifications when an alarm is triggered, you need to obtain an API key from CallMeBot:
+     1. Add the phone number +34 694 29 84 96 to your phone contacts (name it as you wish)
+     2. Send the message "I allow callmebot to send me messages" to this contact via WhatsApp
+     3. Wait to receive the message "API Activated for your phone number. Your APIKEY is XXXXXX" from the bot
+     4. Enter your phone number (with international prefix) and the received APIKEY in the WiFiManager configuration interface
+   - Note: If you don't receive the API key within 2 minutes, please try again after 24 hours.
+   
+   Example of activation message exchange with CallMeBot:
+   
+   ![CallMeBot Activation](Assets/callmebot-activation.png)
+
+6. **ESP32 Setup**:
+   - When powered on for the first time (or if no WiFi is present ), the ESP32 will start in AP mode.
    - Connect to the ESP32 via the provided WiFiManager interface to configure your WiFi credentials.
+
+   ![ESP32 Configuration](Assets/ESP32 Configuration.png)
 
 ## Usage
 
@@ -133,6 +146,7 @@ This project makes use of the following open-source libraries:
 - Use the RFID module to authenticate authorized users.
 - The system will trigger the buzzer if unauthorized access is detected via reed switches or motion sensors.
 - Monitor system status on the OLED display.
+- Receive WhatsApp notifications when the alarm is triggered.
 
 ## Notes
 - For the ESP32 firmware the standard <wire.h> library gave us many problems when using the esp32 as a slave devicce on the i2c bus. Changing the <Wire.h> to the standard <drivers/i2c.h> solved these problems.
