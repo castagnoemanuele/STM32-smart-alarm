@@ -138,7 +138,7 @@ This project makes use of the following open-source libraries:
    - When powered on for the first time (or if no WiFi is present ), the ESP32 will start in AP mode.
    - Connect to the ESP32 via the provided WiFiManager interface to configure your WiFi credentials.
 
-   ![ESP32 Configuration](Assets/ESP32 Configuration.png)
+   ![ESP32 Configuration](Assets/ESP32-Configuration.png)
 
 ## Usage
 
