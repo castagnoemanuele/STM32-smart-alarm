@@ -26,7 +26,7 @@ This project is an advanced alarm system designed for home and office security. 
 
 ## System Architecture
 
-![Block Diagram](Assets/Block_Diagram.svg)
+![Block Diagram](Assets/Block_Diagram.drawio.svg)
 
 The system is divided into two main units:
 
