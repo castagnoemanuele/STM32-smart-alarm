@@ -29,6 +29,7 @@
 #include "ctype.h"
 #include "pinCode.h"
 #include "RFID.h"
+#include "esp32.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,9 +69,9 @@ uint32_t last_key_time = 0;
 uint32_t last_reed_time = 0;
 
 PincodeState pincodeState;
-bool wifi_connected = false;
+
 char rx_data[DATA_SIZE];
-char device_ip[32];
+
 
 uint8_t value = 0;
 char str1[17] = { '\0' };
@@ -103,13 +104,13 @@ static void MX_TIM1_Init(void);
 static void MX_SPI3_Init(void);
 /* USER CODE BEGIN PFP */
 int ScanI2CDevices(void);
-bool is_valid_ip(const char *ip);
+
 char scan_keypad(void);
 void handle_keypress(char key);
 void TriggerAlarm(void);
 void StopAlarm(void);
 void HandleReedSwitch(void);
-void esp32getIP(void);
+
 
 /* USER CODE END PFP */
 
@@ -708,86 +709,6 @@ int ScanI2CDevices(void) {
 
 	HAL_UART_Transmit(&huart2, EndMSG, sizeof(EndMSG), 10000);
 	return found;
-}
-
-void esp32getIP(void) {
-	for (int attempt = 1; attempt <= MAX_CONNECTION_ATTEMPTS; attempt++) {
-		uint8_t send_byte = '1';
-		HAL_StatusTypeDef tx_status = HAL_I2C_Master_Transmit(&hi2c1, (I2C_ADDR << 1), &send_byte, 1, HAL_MAX_DELAY);
-		if (tx_status != HAL_OK) {
-			printf("[ERROR] I2C Transmit failed on attempt %d\n", attempt);
-			continue;
-		}
-
-		HAL_Delay(10);
-
-		uint8_t rx_raw[DATA_SIZE] = {0};
-		HAL_StatusTypeDef rx_status = HAL_I2C_Master_Receive(&hi2c1, (I2C_ADDR << 1), rx_raw, DATA_SIZE, HAL_MAX_DELAY);
-
-		if (rx_status == HAL_OK) {
-			// Convert to string safely
-			char ip_str[DATA_SIZE + 1] = {0}; // null terminator
-			for (int i = 0; i < DATA_SIZE; i++) {
-				if (rx_raw[i] == '\n' || rx_raw[i] == '\r') {
-					break;
-				}
-				if (isprint(rx_raw[i])) {
-					ip_str[i] = rx_raw[i];
-				} else {
-					ip_str[i] = 0;
-					break;
-				}
-			}
-			ip_str[DATA_SIZE] = '\0';
-
-			if (is_valid_ip(ip_str)) {
-				strncpy(device_ip, ip_str, sizeof(device_ip));
-				device_ip[sizeof(device_ip) - 1] = '\0';
-
-				printf("[OK] Received valid IP: %s\n", device_ip);
-				Display_IPAddress(device_ip);
-				HAL_Delay(100);
-				wifi_connected = true;
-				break;
-			} else {
-				printf("[WARN] Invalid IP received: %s\n", ip_str);
-			}
-		} else {
-			printf("[ERROR] No IP received on attempt %d\n", attempt);
-		}
-
-		strcpy(device_ip, "ERROR");
-		Display_IPAddress(device_ip);
-		HAL_Delay(200);
-	}
-}
-
-
-bool is_valid_ip(const char *ip) {
-	int num, dots = 0;
-	char *ptr;
-	char ip_copy[32];
-	strncpy(ip_copy, ip, sizeof(ip_copy));
-	ip_copy[sizeof(ip_copy) - 1] = '\0';
-
-	ptr = strtok(ip_copy, ".");
-	if (ptr == NULL)
-		return false;
-
-	while (ptr) {
-		if (!isdigit(*ptr))
-			return false;
-
-		num = atoi(ptr);
-		if (num < 0 || num > 255)
-			return false;
-
-		ptr = strtok(NULL, ".");
-		if (ptr != NULL)
-			dots++;
-	}
-
-	return dots == 3;
 }
 
 char scan_keypad(void) {
