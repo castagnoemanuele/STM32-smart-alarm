@@ -11,11 +11,11 @@ This project is an advanced alarm system designed for home and office security. 
 - Real-time WhatsApp notifications  
 - User interface on OLED display
 
-[![Demo Video on YouTube](https://img.youtube.com/vi/71LS64RbG-M/hqdefault.jpg)](https://www.youtube.com/watch?v=VkK-71LS64R)
+[![Demo Video on YouTube](https://img.youtube.com/vi/71LS64RbG-M/hqdefault.jpg)](https://www.youtube.com/watch?v=71LS64RbG-M)
 
 ## Hardware Components
 
-- **STM32 Nucleo-64 Board**: Main processing unit  
+- **STM32 Nucleo-64 Board**: Main processing unit 
 - **ESP32 Wemos S2 mini Module**: WiFi handling and notifications  
 - **128x64 I2C OLED Display**: User interface  
 - **4x4 Matrix Keypad**: PIN code entry  
@@ -187,12 +187,6 @@ This project makes use of the following open-source libraries:
 - For ESP32, use `driver/i2c.h` instead of `Wire.h`  
 - RFID module requires SPI prescaler set to 32  
 - Power RC522 with 5V for stability  
-
-### Security Tips
-
-- Change the default PIN on first use  
-- Restrict physical access to the ESP32 module  
-- Regularly update firmware
 
 ## License
 
