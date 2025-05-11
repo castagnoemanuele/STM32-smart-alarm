@@ -6,12 +6,13 @@
 #include "config.h"
 
 typedef struct {
-    char entered_pincode[PINCODE_LENGTH + 1];
-    uint8_t pincode_position;
-    uint8_t pin_attempts;
-    uint32_t lockout_start;
-    bool system_locked;
-    bool system_armed;
+	char entered_pincode[PINCODE_LENGTH + 1];
+	uint8_t pincode_position;
+	uint8_t pin_attempts;
+	uint32_t lockout_start;
+	bool system_locked;
+	bool system_armed;
+	bool message_sent;
 } PincodeState;
 
 void Pincode_Init(PincodeState *state);

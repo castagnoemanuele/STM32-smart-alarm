@@ -13,24 +13,30 @@ String apiKey = "";
 #define SCL_PIN 39
 #define I2C_ADDRESS 0x5C // I2C address of the slave device
 
-void sendWhatsAppAlert(String message) {
+void sendWhatsAppAlert(String message)
+{
     // Check if phone number and API key are valid
     String phone = phoneNumber;
     String api = apiKey;
     phone.trim();
     api.trim();
 
-    if (phone.length() == 0 || api.length() == 0) {
+    if (phone.length() == 0 || api.length() == 0)
+    {
         Serial.println("[ERROR] Phone number or API key not set!");
         return;
     }
 
     String encodedMessage = "";
-    for (int i = 0; i < message.length(); i++) {
+    for (int i = 0; i < message.length(); i++)
+    {
         char c = message[i];
-        if (isalnum(c)) {
+        if (isalnum(c))
+        {
             encodedMessage += c;
-        } else {
+        }
+        else
+        {
             encodedMessage += "%" + String(c, HEX);
         }
     }
@@ -43,20 +49,24 @@ void sendWhatsAppAlert(String message) {
 
     HTTPClient http; // Declare HTTPClient object
 
-    http.begin(url); // Initialize HTTP request
+    http.begin(url);                                  // Initialize HTTP request
     http.addHeader("User-Agent", "ESP32-SmartAlarm"); // Add user-agent header
-    int httpCode = http.GET(); // Send GET request
+    int httpCode = http.GET();                        // Send GET request
 
-    if (httpCode > 0) {
+    if (httpCode > 0)
+    {
         Serial.println("[OK] WhatsApp sent! Response: " + String(httpCode));
-    } else {
+    }
+    else
+    {
         Serial.println("[FAIL] Error sending WhatsApp: " + http.errorToString(httpCode));
     }
 
     http.end(); // End HTTP request
 }
 
-void setup() {
+void setup()
+{
     ///////////////////// SERIAL ///////////////////////
     Serial.begin(115200);
     delay(1000); // Give time for serial monitor to open
@@ -97,7 +107,8 @@ void setup() {
     wm.addParameter(&custom_phone);
     wm.addParameter(&custom_api);
 
-    if (!wm.autoConnect("AutoConnectAP", "password")) {
+    if (!wm.autoConnect("AutoConnectAP", "password"))
+    {
         Serial.println("[FAIL] WiFi Connect failed, restarting");
         ESP.restart();
     }
@@ -108,7 +119,8 @@ void setup() {
     prefs.begin("config", false);
 
     // If first time, save; else load existing
-    if (String(custom_phone.getValue()).length() > 0 && String(custom_api.getValue()).length() > 0) {
+    if (String(custom_phone.getValue()).length() > 0 && String(custom_api.getValue()).length() > 0)
+    {
         prefs.putString("phone", custom_phone.getValue());
         prefs.putString("apikey", custom_api.getValue());
         Serial.println("[OK] Saved new phone and API key");
@@ -121,24 +133,27 @@ void setup() {
     Serial.println("[INFO] Loaded phone: " + phoneNumber);
     Serial.println("[INFO] Loaded API key: " + apiKey);
 
-    sendWhatsAppAlert("System ready and online");  // Test message
+    sendWhatsAppAlert("System ready and online"); // Test message
 
     prefs.end();
 }
 
-void loop() {
+void loop()
+{
     static uint8_t data[128];
     static size_t data_len = 0;
     static unsigned long lastBlink = 0;
 
     // Handle incoming data
     data_len = i2c_slave_read_buffer(I2C_NUM_0, data, sizeof(data), 10 / portTICK_PERIOD_MS);
-    if (data_len > 0) {
+    if (data_len > 0)
+    {
         Serial.print("Received ");
         Serial.print(data_len);
         Serial.println(" byte(s):");
 
-        for (size_t i = 0; i < data_len; i++) {
+        for (size_t i = 0; i < data_len; i++)
+        {
             Serial.print("Received char: ");
             Serial.println((char)data[i]);
 
@@ -148,11 +163,13 @@ void loop() {
             digitalWrite(LED_BUILTIN, HIGH);
             delay(100);
 
-            if (data[i] == '1') {
+            if (data[i] == '1')
+            {
                 // Send IP address to master
                 String ipAddress = WiFi.localIP().toString();
                 size_t ip_len = ipAddress.length();
-                for (size_t j = 0; j < ip_len; j++) {
+                for (size_t j = 0; j < ip_len; j++)
+                {
                     data[j] = ipAddress[j];
                 }
                 data[ip_len] = '\n'; // End of transmission
@@ -160,11 +177,21 @@ void loop() {
                 i2c_slave_write_buffer(I2C_NUM_0, data, ip_len + 1, 10 / portTICK_PERIOD_MS);
 
                 Serial.println("Command 1 received: Sent IP address: " + ipAddress);
-            } else if (data[i] == '2') {
+            }
+            else if (data[i] == '2')
+            {
                 // Send WhatsApp alert for alarm
                 Serial.println("Command 2 received: Sending alarm message via WhatsApp.");
-                sendWhatsAppAlert("ALERT: Alarm triggered!");
-            } else {
+                sendWhatsAppAlert("ALERT: Movement detected!");
+            }
+            else if (data[i] == '3')
+            {
+                // Send WhatsApp for door/window open
+                Serial.println("Command 3 received: Sending door/window open message via WhatsApp.");
+                sendWhatsAppAlert("ALERT: Door/Window opened!");
+            }
+            else
+            {
                 Serial.println("Unknown command received.");
             }
             data[i] = 0; // Clear data buffer for next read
@@ -172,9 +199,9 @@ void loop() {
     }
 
     // Blink LED every 100ms (0.05s on, 0.05s off)
-    if (millis() - lastBlink > 100) {
+    if (millis() - lastBlink > 100)
+    {
         digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // Toggle LED state
         lastBlink = millis();
     }
-    
 }
