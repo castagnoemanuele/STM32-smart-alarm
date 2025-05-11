@@ -96,7 +96,7 @@ static const char keypad[4][4] = {
 
 - [x] Schematic creation  
 - [ ] Full component testing  
-- [ ] Integrated shield development  
+- [x] Integrated shield development  
 
 ### STM32 Firmware:
 
@@ -106,7 +106,7 @@ static const char keypad[4][4] = {
 - [x] Alarm functions  
 - [ ] Complete RFID logic  
 - [x] Reed switch via interrupt  
-- [ ] PIR sensor integration  
+- [x] PIR sensor integration  
 - [x] I2C communication with ESP32  
 
 ### ESP32 Firmware:
