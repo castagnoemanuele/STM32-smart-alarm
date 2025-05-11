@@ -90,6 +90,10 @@ static const char keypad[4][4] = {
 - Temporary lockout after 3 failed attempts (configurable)  
 - PIN codes stored in flash memory   
 
+## Firmware flowchart
+
+![Flowchart](Assets/Flowchart-export.svg)
+
 ## Project Status
 
 ### Hardware:
