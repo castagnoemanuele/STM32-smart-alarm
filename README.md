@@ -92,7 +92,7 @@ static const char keypad[4][4] = {
 
 ## Firmware flowchart
 
-![Flowchart](Assets/Flowchart-export.svg)
+![Flowchart](Assets/flowchart-export.svg)
 
 ## Project Status
 
