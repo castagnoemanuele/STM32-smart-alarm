@@ -30,6 +30,7 @@
 #include "pinCode.h"
 #include "RFID.h"
 #include "esp32.h"
+#include "keypad.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -102,9 +103,6 @@ static void MX_TIM1_Init(void);
 static void MX_SPI3_Init(void);
 /* USER CODE BEGIN PFP */
 int ScanI2CDevices(void);
-
-char scan_keypad(void);
-void handle_keypress(char key);
 void TriggerAlarm(void);
 void StopAlarm(void);
 void HandleReedSwitch(void);
@@ -705,114 +703,6 @@ int ScanI2CDevices(void) {
 	return found;
 }
 
-char scan_keypad(void) {
-	char key = '\0';
-	uint8_t row, col;
-
-	for (row = 0; row < 4; row++) {
-		HAL_GPIO_WritePin(ROW_PORT, ROW1_PIN | ROW2_PIN | ROW3_PIN | ROW4_PIN,
-				GPIO_PIN_SET);
-		switch (row) {
-		case 0:
-			HAL_GPIO_WritePin(ROW_PORT, ROW1_PIN, GPIO_PIN_RESET);
-			break;
-		case 1:
-			HAL_GPIO_WritePin(ROW_PORT, ROW2_PIN, GPIO_PIN_RESET);
-			break;
-		case 2:
-			HAL_GPIO_WritePin(ROW_PORT, ROW3_PIN, GPIO_PIN_RESET);
-			break;
-		case 3:
-			HAL_GPIO_WritePin(ROW_PORT, ROW4_PIN, GPIO_PIN_RESET);
-			break;
-		}
-
-		HAL_Delay(1);
-
-		if (HAL_GPIO_ReadPin(COL_PORT, COL1_PIN) == GPIO_PIN_RESET) {
-			key = keypad[row][0];
-		} else if (HAL_GPIO_ReadPin(COL_PORT, COL2_PIN) == GPIO_PIN_RESET) {
-			key = keypad[row][1];
-		} else if (HAL_GPIO_ReadPin(COL_PORT, COL3_PIN) == GPIO_PIN_RESET) {
-			key = keypad[row][2];
-		} else if (HAL_GPIO_ReadPin(COL_PORT, COL4_PIN) == GPIO_PIN_RESET) {
-			key = keypad[row][3];
-		}
-
-		if (key != '\0') {
-			if (key
-					== last_key&& (HAL_GetTick() - last_key_time) < KEY_DEBOUNCE_MS) {
-				return '\0';
-			}
-			last_key = key;
-			last_key_time = HAL_GetTick();
-			return key;
-		}
-	}
-
-	return '\0';
-}
-
-void handle_keypress(char key) {
-	if (key == '\0')
-		return;
-
-	printf("Key pressed: %c\r\n", key);
-
-	switch (key) {
-	case 'A':
-		if (!pincodeState.system_armed && !pincodeState.system_locked) {
-			pincodeState.pincode_position = 0;
-			memset(pincodeState.entered_pincode, 0,
-					sizeof(pincodeState.entered_pincode));
-			Display_EnterPincode(pincodeState.pincode_position,
-					pincodeState.entered_pincode);
-		}
-		break;
-
-	case 'B':
-		if (pincodeState.system_armed && !pincodeState.system_locked) {
-			pincodeState.pincode_position = 0;
-			memset(pincodeState.entered_pincode, 0,
-					sizeof(pincodeState.entered_pincode));
-			Display_EnterPincode(pincodeState.pincode_position,
-					pincodeState.entered_pincode);
-		}
-		break;
-
-	case 'C':
-		pincodeState.pincode_position = 0;
-		memset(pincodeState.entered_pincode, 0,
-				sizeof(pincodeState.entered_pincode));
-		Display_SystemStatus(pincodeState.system_armed);
-		break;
-
-	case 'D':
-		if (pincodeState.pincode_position == PINCODE_LENGTH) {
-			Pincode_Check(&pincodeState);
-		}
-		break;
-
-	case '*':
-		pincodeState.pincode_position = 0;
-		memset(pincodeState.entered_pincode, 0,
-				sizeof(pincodeState.entered_pincode));
-		Display_EnterPincode(pincodeState.pincode_position,
-				pincodeState.entered_pincode);
-		break;
-
-	case '#':
-		break;
-
-	default:
-		if (pincodeState.pincode_position < PINCODE_LENGTH && isdigit(key)) {
-			pincodeState.entered_pincode[pincodeState.pincode_position++] = key;
-			Display_EnterPincode(pincodeState.pincode_position,
-					pincodeState.entered_pincode);
-		}
-		break;
-	}
-}
 
 void HandlePIRMotion(void) {
 	static uint32_t last_pir_time = 0;
