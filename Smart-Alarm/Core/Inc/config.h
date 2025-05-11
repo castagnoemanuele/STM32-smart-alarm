@@ -31,11 +31,15 @@
 #define RC522_CS_GPIO_Port GPIOD
 
 // Keypad Rows (PB0, PB1, PB2, PB10)
-#define ROW1_PIN   GPIO_PIN_0
+#define ROW1_PIN   GPIO_PIN_15
 #define ROW2_PIN   GPIO_PIN_1
 #define ROW3_PIN   GPIO_PIN_2
 #define ROW4_PIN   GPIO_PIN_10
 #define ROW_PORT   GPIOB
+
+// PIR Sensor
+#define PIR_PIN GPIO_PIN_7
+#define PIR_PORT GPIOB
 
 // Keypad Columns (PC6, PC7, PC4, PC5)
 #define COL1_PIN   GPIO_PIN_6
