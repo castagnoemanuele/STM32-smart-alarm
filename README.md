@@ -1,94 +1,127 @@
 # STM32-Smart-Alarm
 
-Smart alarm security system based on STM32 as the main microcontroller. It is interfaced with an ESP32 for WiFi communication.
+Smart alarm system based on STM32 as the main microcontroller, interfaced with ESP32 for WiFi communications.
 
 ## Introduction
 
-This project is a smart alarm system designed to enhance home or office security. The system utilizes an STM32 microcontroller in conjunction with various sensors and modules to detect unauthorized access and notify users over WiFi. Features include keypad entry, RFID authentication, motion detection, and more.
+This project is an advanced alarm system designed for home and office security. It combines multi-factor authentication, environmental monitoring, and remote notifications through:
 
+- Authentication via keypad and RFID  
+- Detection of door/window openings and motion  
+- Real-time WhatsApp notifications  
+- User interface on OLED display
 
-[![Demo video on youtube](https://img.youtube.com/vi/71LS64RbG-M/hqdefault.jpg)](https://www.youtube.com/watch?v=VkK-71LS64RbG-M)
+[![Demo Video on YouTube](https://img.youtube.com/vi/71LS64RbG-M/hqdefault.jpg)](https://www.youtube.com/watch?v=71LS64RbG-M)
 
+## Hardware Components
 
-## Components
+- **STM32 Nucleo-64 Board**: Main processing unit 
+- **ESP32 Wemos S2 mini Module**: WiFi handling and notifications  
+- **128x64 I2C OLED Display**: User interface  
+- **4x4 Matrix Keypad**: PIN code entry  
+- **Reed Switch Sensor**: Door/window opening detection  
+- **RC522 RFID Module**: Badge-based authentication  
+- **HC-SR501 PIR Sensor**: Motion detection  
+- **Active Buzzer**: Acoustic siren  
 
-The following hardware components are used in this project:
-- **STM32 Nucleo-64 development board**: Main microcontroller.
-- **Wemos ESP32 S2 mini board**: Handles WiFi communication.
-- **I2C OLED Display**: Displays system status and prompts.
-- **4x4 Numpad Array**: For PIN code entry.
-- **Reed switch sensor board**: Detects door or window openings.
-- **RC522 RFID module**: Provides RFID authentication.
-- **HC-SR501 IR sensor**: Detects motion.
-- **Active buzzer**: Alerts users with an audible alarm.
+## System Architecture
 
-## Architecture
+![Block Diagram](Assets/Block_Diagram.drawio.svg)
 
-![Block_diagram](Assets/block-diagram.svg)
+The system is divided into two main units:
 
-The smart alarm system is divided into two main components:
-1. **STM32 Microcontroller**:
-   - Handles sensor inputs, alarm logic, and display control.
-2. **ESP32 WiFi Module**:
-   - Manages network communication and sends notifications.
+1. **STM32 Nucleo-64**:
+   - Sensor and alarm logic management  
+   - Display and user interface control  
+   - I2C communication with ESP32  
 
-A detailed schematic and workflow diagram will be added in future updates.
-![Wiring](Assets/wiring.png)
+2. **ESP32 Wemos S2 mini**:
+   - WiFi connection and notifications  
+   - Web interface configuration  
+   - WhatsApp message dispatch  
 
-# Features
-## 4x4 button matrix
-The 4x4 button matrix, also reffered to as the keypad in the code, is used to input the pincode to authenticate the user after he has presented his badge. it has 8 pins, 4 of these will be used as inputs, while the others will be used as outputs.
+![Wiring Diagram](Assets/wiring.png)
 
-![Keypad](Assets/keypad.gif) 
+## Key Features
 
-[Credits - Antonio Mancuso's Blog](https://www.google.com/url?sa=i&url=https%3A%2F%2Fmancusoa74.blogspot.com%2F2017%2F02%2Fscratch-e-arduino-progetto-6-tastierino.html&psig=AOvVaw3JqhFhCt8b6yLJ_VM6Uewu&ust=1746618144848000&source=images&cd=vfe&opi=89978449&ved=0CAMQjB1qFwoTCIj25uPhjo0DFQAAAAAdAAAAABAE)
+### 1. 4x4 Matrix Keypad
 
-The operation principle of the keypad is as picured above: the microcontroller activates one of the rows (which are the inputs of the keypad, connected to optput pins of the microcontroller) and then begins to check the outputs. If one of them is founs HIGH, then the apposite functions registers the input as described by this matrix:
+Used for PIN code input:
+
+- 8 total pins (4 rows as output, 4 columns as input)  
+- Integrated software debounce (500 ms)  
+- Visual feedback during entry  
+
+![Keypad Functioning](Assets/keypad.gif)  
+*Credits: [Antonio Mancuso's Blog](https://mancusoa74.blogspot.com/2017/02/scratch-e-arduino-progetto-6-tastierino.html)*
+
+```c
+static const char keypad[4][4] = {
+    {'1','2','3','A'},
+    {'4','5','6','B'},
+    {'7','8','9','C'},
+    {'*','0','#','D'}
+};
 ```
-   static const char keypad[4][4] = {
-	     { '1', '2', '3', 'A' },
-	     { '4', '5', '6', 'B' },
-	     { '7', '8', '9', 'C' },
-	     { '*', '0', '#', 'D' }
-   };    
-```
-This check is performed in polling mode.
 
-## RFID Card reader
+### 2. RC522 RFID Reader
 
-## 
+- Mifare tag authentication  
+- Support for multiple authorized badges  
+- PIN prompt after badge recognition  
+- SPI configuration with prescaler set to 32  
 
-## To Do
+### 3. Alarm System
+
+**Triggers**:
+
+- Door/window openings (reed switch)  
+- Unauthorized movements (PIR sensor)   
+
+**Actions**:
+
+- Activate buzzer  
+- Immediate WhatsApp alert  
+- OLED display blinking  
+
+### 4. Security Management
+
+- Two-factor authentication (RFID + PIN)  
+- Temporary lockout after 3 failed attempts (configurable)  
+- PIN codes stored in flash memory   
+
+## Project Status
 
 ### Hardware:
-- [x] Create and upload the schematic for hardware connections.
-- [ ] Test and validate all hardware components.
-- [ ] Build a prototype shield that hosts ESP32 and I2C display on top of the STM32
 
-### Firmware - STM32:
-- [x] Initialize display
-- [x] Add support for multiple PIN codes (saving to FLASH).
-- [ ] Implement Pin Setting procedure
-- [x] Display current informations on display function
-- [x] Implement alarm function (Sound + Light) and arming and disarming the system
-- [ ] Implement RFID authentication logic.
-- [x] Implement Reed switch control via interrupt
-- [ ] Integrate motion sensor functionality.
-- [x] Implement connection via I2C with the ESP32
-- [ ] 
-- [ ] Improve code modularity
+- [x] Schematic creation  
+- [ ] Full component testing  
+- [ ] Integrated shield development  
 
+### STM32 Firmware:
 
-### Firmware - ESP32:
-- [x] Implement WiFi Connection
-- [x] Send IP/wifi information to STM32
-- [ ] Develop a feature to send notifications via WiFi.
+- [x] Display initialization  
+- [x] Flash-based PIN management  
+- [ ] PIN setup procedure  
+- [x] Alarm functions  
+- [ ] Complete RFID logic  
+- [x] Reed switch via interrupt  
+- [ ] PIR sensor integration  
+- [x] I2C communication with ESP32  
 
-### Possible Future Enhancements:
-- [ ] Add a mobile app for remote control.
-- [ ] Integrate a camera module for visual monitoring.
-- [ ] Expand compatibility with other microcontroller boards.
+### ESP32 Firmware:
 
+- [x] WiFi connection  
+- [x] IP information dispatch  
+- [x] WhatsApp notifications  
+
+## Installation
+
+### Prerequisites
+
+- STM32CubeIDE for STM32 development  
+- Arduino IDE for ESP32 programming  
+- Required libraries (see section below) 
 
 ## Libraries Used
 
@@ -96,13 +129,6 @@ This project makes use of the following open-source libraries:
 - [STM32 SSD1306 library](https://github.com/afiskon/stm32-ssd1306): For interfacing with the OLED display.
 - [RFID-MIFARE-RC522-ARM-STM32](https://github.com/Hamid-R-Tanhaei/RFID-MIFARE-RC522-ARM-STM32/tree/main): For interfacing with the RC522 RFID scanner
 - [WiFiManager](https://github.com/tzapu/WiFiManager): Simplifies WiFi connectivity setup.
-
-## Installation and Setup
-
-### Prerequisites
-- Install STM32CubeIDE or your preferred STM32 development environment.
-- Install the Arduino IDE for programming the ESP32.
-- Ensure you have all the necessary hardware components.
 
 ### Steps
 1. **Clone the Repository**:
@@ -112,7 +138,7 @@ This project makes use of the following open-source libraries:
    ```
 
 2. **Hardware Setup**:
-   - Connect all components as per the provided schematic (to be added).
+   - Connect all components as per the provided schematic.
    - Ensure proper power supply and secure connections.
 
 3. **Flashing the STM32**:
@@ -123,20 +149,44 @@ This project makes use of the following open-source libraries:
    - Open the ESP32 code in Arduino IDE.
    - Compile and upload the code to the ESP32 S2 mini board.
 
-5. **WiFi Configuration**:
-   - When powered on, the ESP32 will start in AP mode.
-   - Connect to the ESP32 via the provided WiFiManager interface to configure your WiFi credentials.
+5. **WhatsApp Notification Setup**:
+   - To receive WhatsApp notifications when an alarm is triggered, you need to obtain an API key from CallMeBot:
+     1. Add the phone number +34 694 29 84 96 to your phone contacts (name it as you wish)
+     2. Send the message "I allow callmebot to send me messages" to this contact via WhatsApp
+     3. Wait to receive the message "API Activated for your phone number. Your APIKEY is XXXXXX" from the bot
+     4. Enter your phone number (with international prefix) and the received APIKEY in the WiFiManager configuration interface
+   - Note: If you don't receive the API key within 2 minutes, please try again after 24 hours.
+   
+   Example of activation message exchange with CallMeBot:
+   
+   ![CallMeBot Activation](Assets/callmebot-activation.png)
+
+6. **ESP32 Setup**:
+   - On power-up, connect to the "AutoConnectAP" network  
+   - Enter WiFi credentials in the web interface  
+   - Set phone number and WhatsApp API key  
+
+   ![ESP32 Configuration](Assets/ESP32-Configuration.png)
 
 ## Usage
 
-- Enter the PIN code on the keypad to arm or disarm the alarm system.
-- Use the RFID module to authenticate authorized users.
-- The system will trigger the buzzer if unauthorized access is detected via reed switches or motion sensors.
-- Monitor system status on the OLED display.
+1. **Arming the system**:
+   - Present RFID badge 
+   - Press 'A' and enter your PIN  
+   - Confirm with 'D'  
 
-## Notes
-- For the ESP32 firmware the standard <wire.h> library gave us many problems when using the esp32 as a slave devicce on the i2c bus. Changing the <Wire.h> to the standard <drivers/i2c.h> solved these problems.
-- For the STM32, getting the RC522 to work was a lot of trouble, probably because our card reader was a cheap clone. Out of many things, to get it to work we had to set the SPI prescaler to 32, because the default value was too high for the RC522. Also it is possible that powering the chip with 5v instead of 3.3v helped.
+2. **Disarming**:
+   - Present RFID badge  
+   - Enter PIN when prompted  
+
+
+## Technical Notes
+
+### Known Issues
+
+- For ESP32, use `driver/i2c.h` instead of `Wire.h`  
+- RFID module requires SPI prescaler set to 32  
+- Power RC522 with 5V for stability  
 
 ## License
 
@@ -145,3 +195,12 @@ This project is licensed under the [MIT License](LICENSE).
 ## Acknowledgments
 
 Special thanks to the authors of the open-source libraries and the community for their valuable contributions.
+
+---
+
+**Future Developments**:
+
+- Mobile app for remote control  
+- Home Assistant integration  
+- GSM module for SMS alerts  
+- Multi-zone expansion  
