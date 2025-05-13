@@ -6,13 +6,14 @@
 #include "ssd1306_fonts.h"
 #include "config.h"
 #include <stdbool.h>
+#include <pincode.h>
 
 /* Display Functions */
 void Display_Init(void);
 void Display_BootMessage(void);
 void Display_SystemStatus(bool system_armed);
 void Display_LockedScreen(uint32_t remaining_seconds);
-void Display_EnterPincode(uint8_t pincode_position, const char* entered_pincode);
+void Display_EnterPincode(const PincodeState *state);
 void Display_AccessGranted(void);
 void Display_AccessDenied(void);
 void Display_AlarmScreen(bool toggle);

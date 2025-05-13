@@ -168,7 +168,7 @@ int main(void) {
 	//MFRC522_Init();
 
 	// Enable ESP32
-	HAL_GPIO_WritePin(GPIOB, ESP32_EN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ESP32_EN_Port, ESP32_EN, GPIO_PIN_SET);
 	HAL_Delay(5000); // Give time to the ESP to boot
 
 	// Read saved pincode from flash

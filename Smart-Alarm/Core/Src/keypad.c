@@ -76,7 +76,7 @@ void handle_keypress(char key) {
         if (!pincodeState.system_armed && !pincodeState.system_locked) {
             pincodeState.pincode_position = 0;
             memset(pincodeState.entered_pincode, 0, sizeof(pincodeState.entered_pincode));
-            Display_EnterPincode(pincodeState.pincode_position, pincodeState.entered_pincode);
+            Display_EnterPincode(&pincodeState);
         }
         break;
 
@@ -84,7 +84,7 @@ void handle_keypress(char key) {
         if (pincodeState.system_armed && !pincodeState.system_locked) {
             pincodeState.pincode_position = 0;
             memset(pincodeState.entered_pincode, 0, sizeof(pincodeState.entered_pincode));
-            Display_EnterPincode(pincodeState.pincode_position, pincodeState.entered_pincode);
+            Display_EnterPincode(&pincodeState);
         }
         break;
 
@@ -103,7 +103,7 @@ void handle_keypress(char key) {
     case '*':
         pincodeState.pincode_position = 0;
         memset(pincodeState.entered_pincode, 0, sizeof(pincodeState.entered_pincode));
-        Display_EnterPincode(pincodeState.pincode_position, pincodeState.entered_pincode);
+        Display_EnterPincode(&pincodeState);
         break;
 
     case '#':
@@ -112,7 +112,7 @@ void handle_keypress(char key) {
     default:
         if (pincodeState.pincode_position < PINCODE_LENGTH && isdigit(key)) {
             pincodeState.entered_pincode[pincodeState.pincode_position++] = key;
-            Display_EnterPincode(pincodeState.pincode_position, pincodeState.entered_pincode);
+            Display_EnterPincode(&pincodeState);
         }
         break;
     }

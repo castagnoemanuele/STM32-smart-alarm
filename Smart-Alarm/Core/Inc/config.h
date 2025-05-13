@@ -13,33 +13,45 @@
 #define MAX_CONNECTION_ATTEMPTS 3
 #define DATA_SIZE 20
 #define I2C_ADDR 0x5C
+#define ESP32_EN GPIO_PIN_5	// Reset
+#define ESP32_EN_Port GPIOB
 
 /* Pin Definitions */
-#define BUTTON_PIN         GPIO_PIN_13
 #define REED_SWITCH_PIN    GPIO_PIN_8
 #define BUZZER_PIN         GPIO_PIN_10
-#define ESP32_EN           GPIO_PIN_5
+#define BUTTON_PIN         GPIO_PIN_13
 
 // Integrated LED
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
 
-// RC522 pins
+// ============================================
+/*RC522 RFID Module Pin Configuration
+ ============================================
+ | RC522 Pin     | STM32 Pin     | Description             |
+ |---------------|---------------|-------------------------|
+ | VCC           | 3.3V          | Power supply (3.3V)     |
+ | GND           | GND           | Ground                  |
+ | RST           | PA15          | Reset pin               |
+ | SDA/CS        | PD2           | Chip Select (SPI CS)    |
+ | MOSI          | PC12          | Master Out Slave In     |
+ | MISO          | PC11          | Master In Slave Out     |
+ | SCK           | PC10          | SPI Clock               |*/
 #define RC522_Rst_Pin GPIO_PIN_15
 #define RC522_Rst_GPIO_Port GPIOA
 #define RC522_CS_Pin GPIO_PIN_2
 #define RC522_CS_GPIO_Port GPIOD
 
-// Keypad Rows (PB0, PB1, PB2, PB10)
+// PIR Sensor
+#define PIR_PIN GPIO_PIN_7
+#define PIR_PORT GPIOB
+
+// Keypad Rows (PB15, PB1, PB2, PB10)
 #define ROW1_PIN   GPIO_PIN_15
 #define ROW2_PIN   GPIO_PIN_1
 #define ROW3_PIN   GPIO_PIN_2
 #define ROW4_PIN   GPIO_PIN_10
 #define ROW_PORT   GPIOB
-
-// PIR Sensor
-#define PIR_PIN GPIO_PIN_7
-#define PIR_PORT GPIOB
 
 // Keypad Columns (PC6, PC7, PC4, PC5)
 #define COL1_PIN   GPIO_PIN_6
@@ -50,10 +62,10 @@
 
 // Keypad matrix definition
 static const char keypad[4][4] = {
-	  { '1', '2', '3', 'A' },
-	  { '4', '5', '6', 'B' },
-	  { '7', '8', '9', 'C' },
-	  { '*', '0', '#', 'D' }
+		{ '1', '2', '3', 'A' },
+		{ '4', '5', '6', 'B' },
+		{ '7', '8', '9', 'C' },
+		{ '*', '0', '#', 'D' }
 };
 
 #endif /* CONFIG_H */
