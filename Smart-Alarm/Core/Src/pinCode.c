@@ -5,13 +5,14 @@
 #include "flashMemory.h"
 
 void Pincode_Init(PincodeState *state) {
-	memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
-	state->pincode_position = 0;
-	state->pin_attempts = 0;
-	state->lockout_start = 0;
-	state->system_locked = false;
-	state->system_armed = false;
-	state->message_sent = false;
+    memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
+    state->pincode_position = 0;
+    state->pin_attempts = 0;
+    state->lockout_start = 0;
+    state->system_locked = false;
+    state->system_armed = false;
+    state->message_sent = false;
+    state->user_count = 0; // Initialize user count to 0
 }
 
 void Pincode_Check(PincodeState *state) {
@@ -45,4 +46,18 @@ void Pincode_Check(PincodeState *state) {
 					state->entered_pincode);
 		}
 	}
+}
+
+bool Register_NewUser(PincodeState *state, uint8_t *uid, const char *pin) {
+    if (state->user_count >= MAX_USERS) {
+        printf("User limit reached. Cannot register new user.\n");
+        return false;
+    }
+
+    memcpy(state->users[state->user_count].uid, uid, 5);
+    strncpy(state->users[state->user_count].pin, pin, PINCODE_LENGTH);
+    state->users[state->user_count].pin[PINCODE_LENGTH] = '\0';
+    state->user_count++;
+    printf("New user registered successfully.\n");
+    return true;
 }

@@ -30,7 +30,7 @@
 #define RC522_CS_Pin GPIO_PIN_2
 #define RC522_CS_GPIO_Port GPIOD
 
-// Keypad Rows (PB0, PB1, PB2, PB10)
+// Keypad Rows (PB1, PB2, PB10, PB15)
 #define ROW1_PIN   GPIO_PIN_15
 #define ROW2_PIN   GPIO_PIN_1
 #define ROW3_PIN   GPIO_PIN_2
