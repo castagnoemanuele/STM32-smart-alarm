@@ -41,8 +41,7 @@ void Pincode_Check(PincodeState *state) {
 			Display_AccessDenied();
 			state->pincode_position = 0;
 			memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
-			Display_EnterPincode(state->pincode_position,
-					state->entered_pincode);
+			Display_EnterPincode(state);
 		}
 	}
 }
