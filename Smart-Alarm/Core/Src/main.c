@@ -640,9 +640,13 @@ void EXTI9_5_IRQHandler(void) {
 void HandleReedSwitch(void) {
 	if (reed_triggered && pincodeState.system_armed) {
 		reed_triggered = 0;
-		uint8_t send_byte = '3'; // Command to signal open door/window
-		HAL_StatusTypeDef tx_status = HAL_I2C_Master_Transmit(&hi2c1,
-				(I2C_ADDR << 1), &send_byte, 1, HAL_MAX_DELAY);
+		// Send message to ESP32
+		if (!pincodeState.message_sent) {
+			pincodeState.message_sent = true;  // Imposta a true dopo l'invio
+			uint8_t send_byte = '3'; // Command to signal open door/window
+			HAL_StatusTypeDef tx_status = HAL_I2C_Master_Transmit(&hi2c1,
+					(I2C_ADDR << 1), &send_byte, 1, HAL_MAX_DELAY);
+		}
 		TriggerAlarm();
 	}
 }
