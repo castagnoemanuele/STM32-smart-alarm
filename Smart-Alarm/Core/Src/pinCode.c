@@ -4,6 +4,14 @@
 #include "stdio.h"
 #include "flashMemory.h"
 
+/**
+ * @brief Initialize the pincode system state.
+ *
+ * Resets the pincode buffer, counters, and system status.
+ * This function must be called before using other pincode functionalities.
+ *
+ * @param state Pointer to the PincodeState structure.
+ */
 void Pincode_Init(PincodeState *state) {
 	memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
 	state->pincode_position = 0;
@@ -14,37 +22,48 @@ void Pincode_Init(PincodeState *state) {
 	state->message_sent = false;
 }
 
+/**
+ * @brief Check the entered pincode against the stored pincode.
+ *
+ * Validates the entered pincode. If correct, toggles the system armed state.
+ * If incorrect, increments the attempt counter and handles lockout if necessary.
+ *
+ * @param state Pointer to the PincodeState structure.
+ */
 void Pincode_Check(PincodeState *state) {
 	uint32_t stored_pincode = ReadFromFlash(address1);
 	char stored_pincode_str[PINCODE_LENGTH + 1];
+
+	// Convert stored pincode to string with zero-padding
 	snprintf(stored_pincode_str, sizeof(stored_pincode_str), "%04lu",
 			(unsigned long) stored_pincode);
 
-	// Check if the entered pincode matches the stored pincode
-	if (strncmp(state->entered_pincode, stored_pincode_str, PINCODE_LENGTH) == 0) {
+	// Check if entered pincode matches the stored one
+	if (strncmp(state->entered_pincode, stored_pincode_str, PINCODE_LENGTH)
+			== 0) {
 		state->pin_attempts = 0;
 		state->system_armed = !state->system_armed;
 
-		// Always reset entered pincode and position when the system state changes
+		// Clear entered pincode and reset position after success
 		memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
 		state->pincode_position = 0;
 
 		Display_AccessGranted();
 		Display_SystemStatus(state->system_armed);
 
-		// Reset message flag if the system is disarmed
+		// Reset message flag if system is disarmed
 		if (!state->system_armed) {
 			state->message_sent = false;
 		}
 	} else {
 		state->pin_attempts++;
 
-		// Check if maximum attempts are reached
+		// Check if max attempts exceeded to lock the system
 		if (state->pin_attempts >= MAX_PIN_ATTEMPTS) {
 			state->system_locked = true;
 			state->lockout_start = HAL_GetTick();
 
-			// Reset entered pincode and position when the system is locked
+			// Clear entered pincode and reset position on lockout
 			memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
 			state->pincode_position = 0;
 
@@ -52,7 +71,7 @@ void Pincode_Check(PincodeState *state) {
 		} else {
 			Display_AccessDenied();
 
-			// Always reset entered pincode and position after wrong attempt
+			// Clear entered pincode and reset position for next attempt
 			memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
 			state->pincode_position = 0;
 
@@ -60,4 +79,3 @@ void Pincode_Check(PincodeState *state) {
 		}
 	}
 }
-

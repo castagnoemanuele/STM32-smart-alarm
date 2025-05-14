@@ -722,13 +722,18 @@ void HandlePIRMotion(void) {
 	}
 
 	// If motion was detected
-	if (pir_triggered && !pincodeState.message_sent) {
-		pir_triggered = 0;
-		pincodeState.message_sent = true;  // Set to true after submit
-		uint8_t send_byte = '2'; // Command to signal movement
-		HAL_StatusTypeDef tx_status = HAL_I2C_Master_Transmit(&hi2c1,
-				(I2C_ADDR << 1), &send_byte, 1, HAL_MAX_DELAY);
+	if (pir_triggered) {
+		// If the message has not been sent yet
+		if (!pincodeState.message_sent) {
+			pincodeState.message_sent = true;  // Set to true after submit
+			uint8_t send_byte = '2'; // Command to signal movement
+			HAL_StatusTypeDef tx_status = HAL_I2C_Master_Transmit(&hi2c1,
+					(I2C_ADDR << 1), &send_byte, 1, HAL_MAX_DELAY);
+		}
+		
+		// Trigger the alarm
 		TriggerAlarm();
+		pir_triggered = 0;
 	}
 }
 
