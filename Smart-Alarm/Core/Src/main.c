@@ -28,7 +28,6 @@
 #include "string.h"
 #include "ctype.h"
 #include "pinCode.h"
-#include "RFID.h"
 #include "esp32.h"
 #include "keypad.h"
 /* USER CODE END Includes */
@@ -164,8 +163,7 @@ int main(void) {
 	printf("Display initialized...\r\n");
 	Pincode_Init(&pincodeState);
 
-	//Initialize RFID
-	//MFRC522_Init();
+
 
 	// Enable ESP32
 	HAL_GPIO_WritePin(ESP32_EN_Port, ESP32_EN, GPIO_PIN_SET);
@@ -199,12 +197,7 @@ int main(void) {
 	}
 
 	//
-	printf("\nSearching for an RC522\r\n");
-	RFIDstatus = Read_MFRC522(VersionReg);
-	sprintf(str1, "\nRunning RC522\r\n");
-	sprintf(str2, "\nver:%x\r\n", RFIDstatus);
-	printf("%s\r\n", str1);
-	printf("%s\r\n", str2);
+
 
 	/* USER CODE END 2 */
 
@@ -256,7 +249,7 @@ int main(void) {
 		}
 
 		HAL_Delay(10);
-		//checkRFID();
+
 
 		// Handle PIR
 		HandlePIRMotion();
