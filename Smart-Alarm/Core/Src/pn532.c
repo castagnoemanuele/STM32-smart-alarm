@@ -1,8 +1,11 @@
 #include "pn532.h"
 #include "stdio.h"
 #include "string.h"
+#include "config.h"
 
 static I2C_HandleTypeDef *pn532_hi2c = NULL;
+
+extern I2C_HandleTypeDef hi2c1;
 
 // PN532 frame structure constants
 #define PN532_PREAMBLE      0x00
@@ -53,17 +56,16 @@ bool PN532_ReadPassiveTarget(uint8_t *uid, uint8_t *uidLength) {
     if (!pn532_writeCommand(cmd, 3)) return false;
     if (!pn532_readResponse(resp, sizeof(resp), 300)) return false;
 
-    // Check number of targets found
-    if (resp[8] != 1 || resp[12] == 0) return false; // No tag present
     // Debug: print raw response
-    printf("PN532 raw response: ");
-    for (int i = 0; i < 24; i++) printf("%02X ", resp[i]);
-    printf("\r\n");
+    //printf("PN532 raw response: ");
+    //for (int i = 0; i < 24; i++) printf("%02X ", resp[i]);
+    //printf("\r\n");
 
-
+    // Check number of targets found
+    if (resp[8] != 1) return false; // No tag present
 
     *uidLength = resp[12];
-    if (*uidLength < 4 || *uidLength > 7) return false;
+    if (*uidLength < 4 ) return false;
 
     memcpy(uid, &resp[13], *uidLength);
     return true;
@@ -84,6 +86,15 @@ void PN532_Test(void) {
             for (uint8_t i = 0; i < uidLen; i++) {
                 printf("%02X ", uid[i]);
             }
+
+            //Manually reset the sensor... because otherwise it won't forget the last UiD. Don't ask me why
+            HAL_GPIO_WritePin(PN532_Rst_Port, PN532_Rst_Pin, GPIO_PIN_RESET);
+            HAL_Delay(100);
+            HAL_GPIO_WritePin(PN532_Rst_Port, PN532_Rst_Pin, GPIO_PIN_SET);
+            HAL_Delay(100);
+
+            PN532_Init(&hi2c1);
+
             printf("\r\n");
             break;
         }
@@ -157,8 +168,18 @@ static bool pn532_readResponse(uint8_t *response, uint8_t len, uint32_t timeout)
 
 bool PN532_ReleaseTarget(void) {
     uint8_t cmd[2] = {0x52, 0x01}; // InRelease, target 1
-    uint8_t resp[8];
-    if (!pn532_writeCommand(cmd, 2)) return false;
-    if (!pn532_readResponse(resp, sizeof(resp), 100)) return false;
+    uint8_t resp[16];
+    if (!pn532_writeCommand(cmd, 2)) {
+        printf("ReleaseTarget: write failed\r\n");
+        return false;
+    }
+
+    if (!pn532_readResponse(resp, sizeof(resp), 100)) {
+        printf("ReleaseTarget: read failed\r\n");
+        return false;
+    }
+
+
+
     return true;
 }

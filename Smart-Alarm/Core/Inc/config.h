@@ -42,6 +42,10 @@
 #define RC522_CS_Pin GPIO_PIN_2
 #define RC522_CS_GPIO_Port GPIOD
 
+// PN 532 Sensor pins
+#define PN532_Rst_Pin GPIO_PIN_12
+#define PN532_Rst_Port GPIOB
+
 // PIR Sensor
 #define PIR_PIN GPIO_PIN_7
 #define PIR_PORT GPIOB
