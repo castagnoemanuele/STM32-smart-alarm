@@ -30,6 +30,7 @@
 #include "pinCode.h"
 #include "esp32.h"
 #include "keypad.h"
+#include "pn532.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -169,6 +170,13 @@ int main(void) {
 	HAL_GPIO_WritePin(ESP32_EN_Port, ESP32_EN, GPIO_PIN_SET);
 	HAL_Delay(5000); // Give time to the ESP to boot
 
+	// Enable PN532 RFID reader
+	if(!PN532_Init(&hi2c1)){
+		printf("PN532 init failed\r\n");
+	} else {
+
+	}
+
 	// Read saved pincode from flash
 	uint32_t saved_pincode = ReadFromFlash(address1);
 	char pincode_str[12];
@@ -249,6 +257,35 @@ int main(void) {
 		}
 
 		HAL_Delay(10);
+
+		//Handle RFID
+		// Esempio di ciclo principale
+		uint8_t lastUid[7] = {0};
+		uint8_t lastUidLen = 0;
+
+		while (1) {
+		    uint8_t uid[7];
+		    uint8_t uidLen = 0;
+		    if (PN532_ReadPassiveTarget(uid, &uidLen)) {
+		        if (uidLen != lastUidLen || memcmp(uid, lastUid, uidLen) != 0) {
+		            printf("NFC tag detected! UID: ");
+		            for (uint8_t i = 0; i < uidLen; i++) {
+		                printf("%02X ", uid[i]);
+		            }
+		            printf("\r\n");
+		            memcpy(lastUid, uid, uidLen);
+		            lastUidLen = uidLen;
+		            PN532_ReleaseTarget();
+		        }
+		    } else {
+		        // Se vuoi, puoi stampare "No tag present" solo quando lo stato cambia
+		        if (lastUidLen != 0) {
+		            printf("No tag present\r\n");
+		            lastUidLen = 0;
+		        }
+		    }
+		    HAL_Delay(300);
+		}
 
 
 		// Handle PIR
