@@ -595,10 +595,34 @@ void checkRFID() {
 
     static uint32_t lastTick = 0;
     static uint8_t messagePrinted = 0;
+    static uint8_t rfidInitialized = 0;
+    
+    // Check if RFID module is properly initialized
+    if (!rfidInitialized) {
+        // Reset the RFID module
+        HAL_GPIO_WritePin(RC522_Rst_GPIO_Port, RC522_Rst_Pin, GPIO_PIN_RESET);
+        HAL_Delay(50);
+        HAL_GPIO_WritePin(RC522_Rst_GPIO_Port, RC522_Rst_Pin, GPIO_PIN_SET);
+        HAL_Delay(50);
+        
+        // Initialize the module
+        MFRC522_Init();
+        rfidInitialized = 1;
+        
+        // Print debug info
+        RFIDstatus = Read_MFRC522(VersionReg);
+        printf("RFID Version: 0x%02X\n", RFIDstatus);
+        
+        if (RFIDstatus == 0x92 || RFIDstatus == 0x91) {
+            printf("MFRC522 correctly initialized!\n");
+        } else {
+            printf("MFRC522 init error, version: 0x%02X\n", RFIDstatus);
+        }
+    }
 
     // Step 1: Look for cards (non-blocking)
-        if (!messagePrinted) {
-            printf("No card found, waiting for card...");
+    if (!messagePrinted) {
+        printf("No card found, waiting for card...");
             messagePrinted = 1;
         }
 
@@ -607,12 +631,25 @@ void checkRFID() {
             if (status == MI_OK) {
                 printf("\r\nCard detected!\r\n");
                 break;
-            }
-
-            if (HAL_GetTick() - lastTick >= 1000) {
+            }            if (HAL_GetTick() - lastTick >= 500) {  // Reduced from 1000ms to 500ms for faster response
                 printf(".");
                 lastTick = HAL_GetTick();
+                
+                // Check RFID status periodically
+                uint8_t version = Read_MFRC522(VersionReg);
+                if (version != RFIDstatus) {
+                    printf("\nRFID module status changed: 0x%02X\n", version);
+                    RFIDstatus = version;
+                    if (version == 0) {
+                        // Reset if we lost communication with the module
+                        rfidInitialized = 0;
+                        return;
+                    }
+                }
             }
+            
+            // Non-blocking return - check again next time
+            return;
         }
 
     // Step 2: Anti-collision to get UID

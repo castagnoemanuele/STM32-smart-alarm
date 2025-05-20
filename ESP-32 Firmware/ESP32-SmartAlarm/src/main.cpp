@@ -81,10 +81,9 @@ void setup()
     conf.slave.addr_10bit_en = 0;
     conf.slave.slave_addr = I2C_ADDRESS;
 
-    Serial.println("[OK] I2C Slave started");
-
-    i2c_param_config(I2C_NUM_0, &conf);
-    i2c_driver_install(I2C_NUM_0, I2C_MODE_SLAVE, 128, 128, 0);
+    Serial.println("[OK] I2C Slave started");    i2c_param_config(I2C_NUM_0, &conf);
+    ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_SLAVE, 128, 128, 0));
+    Serial.println("[OK] I2C Slave driver installed");
 
     /////////////////////// PINS ///////////////////////
     pinMode(LED_BUILTIN, OUTPUT); // Initialize LED digital pin 15 as an output
@@ -164,17 +163,28 @@ void loop()
             delay(100);
 
             if (data[i] == '1')
-            {
-                // Send IP address to master
+            {                // Send IP address to master
                 String ipAddress = WiFi.localIP().toString();
+                Serial.println("Sending IP: " + ipAddress);
+                
+                // Clear the buffer first
+                memset(data, 0, sizeof(data));
+                
                 size_t ip_len = ipAddress.length();
                 for (size_t j = 0; j < ip_len; j++)
                 {
                     data[j] = ipAddress[j];
                 }
-                data[ip_len] = '\n'; // End of transmission
-
-                i2c_slave_write_buffer(I2C_NUM_0, data, ip_len + 1, 10 / portTICK_PERIOD_MS);
+                data[ip_len] = '\0'; // Ensure proper null termination
+                
+                // Use a timeout of 100ms instead of 10ms
+                esp_err_t write_status = i2c_slave_write_buffer(I2C_NUM_0, data, ip_len + 1, 100 / portTICK_PERIOD_MS);
+                
+                if (write_status == ESP_OK) {
+                    Serial.println("IP address sent successfully");
+                } else {
+                    Serial.println("Failed to send IP address: " + String(write_status));
+                }
 
                 Serial.println("Command 1 received: Sent IP address: " + ipAddress);
             }

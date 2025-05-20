@@ -133,6 +133,10 @@ uint8_t MFRC522_Write(uint8_t, uint8_t*);
 void MFRC522_Halt();
 void MFRC522_StopCrypto1(void);
 void checkRFID();
+void MFRC522_Init_Improved(void);
+uint8_t MFRC522_Request_Improved(uint8_t reqMode, uint8_t *TagType);
+void checkRFID_Improved(void);
+void RFID_Process(void);
 
 //RFID Variables
 extern uint8_t RFIDstatus, cardstr[MAX_LEN + 1];

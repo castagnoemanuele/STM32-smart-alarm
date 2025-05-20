@@ -32,13 +32,13 @@
  |---------------|---------------|-------------------------|
  | VCC           | 3.3V          | Power supply (3.3V)     |
  | GND           | GND           | Ground                  |
- | RST           | PA15          | Reset pin               |
+ | RST           | PC2          | Reset pin               |
  | SDA/CS        | PD2           | Chip Select (SPI CS)    |
  | MOSI          | PC12          | Master Out Slave In     |
  | MISO          | PC11          | Master In Slave Out     |
  | SCK           | PC10          | SPI Clock               |*/
-#define RC522_Rst_Pin GPIO_PIN_15
-#define RC522_Rst_GPIO_Port GPIOA
+#define RC522_Rst_Pin GPIO_PIN_2
+#define RC522_Rst_GPIO_Port GPIOC
 #define RC522_CS_Pin GPIO_PIN_2
 #define RC522_CS_GPIO_Port GPIOD
 
