@@ -4,9 +4,9 @@ Smart alarm system based on STM32 as the main microcontroller, interfaced with E
 
 ## Introduction
 
-This project is an advanced alarm system designed for home and office security. It combines multi-factor authentication, environmental monitoring, and remote notifications through:
+This project is an advanced alarm system designed for home and office security. It combines PIN-based authentication, environmental monitoring, and remote notifications through:
 
-- Authentication via keypad and RFID  
+- Authentication via keypad and PIN code  
 - Detection of door/window openings and motion  
 - Real-time WhatsApp notifications  
 - User interface on OLED display
@@ -20,13 +20,12 @@ This project is an advanced alarm system designed for home and office security. 
 - **128x64 I2C OLED Display**: User interface  
 - **4x4 Matrix Keypad**: PIN code entry  
 - **Reed Switch Sensor**: Door/window opening detection  
-- **RC522 RFID Module**: Badge-based authentication  
 - **HC-SR501 PIR Sensor**: Motion detection  
 - **Active Buzzer**: Acoustic siren  
 
 ## System Architecture
 
-![Block Diagram](Assets/Block_Diagram.drawio.svg)
+![Block Diagram](Assets/Block_Diagram.svg)
 
 The system is divided into two main units:
 
@@ -64,14 +63,7 @@ static const char keypad[4][4] = {
 };
 ```
 
-### 2. RC522 RFID Reader
-
-- Mifare tag authentication  
-- Support for multiple authorized badges  
-- PIN prompt after badge recognition  
-- SPI configuration with prescaler set to 32  
-
-### 3. Alarm System
+### 2. Alarm System
 
 **Triggers**:
 
@@ -84,9 +76,9 @@ static const char keypad[4][4] = {
 - Immediate WhatsApp alert  
 - OLED display blinking  
 
-### 4. Security Management
+### 3. Security Management
 
-- Two-factor authentication (RFID + PIN)  
+- PIN code authentication  
 - Temporary lockout after 3 failed attempts (configurable)  
 - PIN codes stored in flash memory   
 
@@ -99,16 +91,14 @@ static const char keypad[4][4] = {
 ### Hardware:
 
 - [x] Schematic creation  
-- [ ] Full component testing  
+- [x] Full component testing  
 - [x] Integrated shield development  
 
 ### STM32 Firmware:
 
 - [x] Display initialization  
 - [x] Flash-based PIN management  
-- [ ] PIN setup procedure  
 - [x] Alarm functions  
-- [ ] Complete RFID logic  
 - [x] Reed switch via interrupt  
 - [x] PIR sensor integration  
 - [x] I2C communication with ESP32  
@@ -131,7 +121,6 @@ static const char keypad[4][4] = {
 
 This project makes use of the following open-source libraries:
 - [STM32 SSD1306 library](https://github.com/afiskon/stm32-ssd1306): For interfacing with the OLED display.
-- [RFID-MIFARE-RC522-ARM-STM32](https://github.com/Hamid-R-Tanhaei/RFID-MIFARE-RC522-ARM-STM32/tree/main): For interfacing with the RC522 RFID scanner
 - [WiFiManager](https://github.com/tzapu/WiFiManager): Simplifies WiFi connectivity setup.
 
 ### Steps
@@ -175,13 +164,11 @@ This project makes use of the following open-source libraries:
 ## Usage
 
 1. **Arming the system**:
-   - Present RFID badge 
    - Press 'A' and enter your PIN  
    - Confirm with 'D'  
 
 2. **Disarming**:
-   - Present RFID badge  
-   - Enter PIN when prompted  
+   - Enter PIN when prompted
 
 
 ## Technical Notes
@@ -189,8 +176,7 @@ This project makes use of the following open-source libraries:
 ### Known Issues
 
 - For ESP32, use `driver/i2c.h` instead of `Wire.h`  
-- RFID module requires SPI prescaler set to 32  
-- Power RC522 with 5V for stability  
+- Power components with 5V for stability
 
 ## License
 
