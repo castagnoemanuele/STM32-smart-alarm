@@ -80,7 +80,7 @@ static const char keypad[4][4] = {
 
 - PIN code authentication  
 - Temporary lockout after 3 failed attempts (configurable)  
-- PIN codes stored in flash memory   
+- PIN code stored in flash memory   
 
 ## Firmware flowchart
 
