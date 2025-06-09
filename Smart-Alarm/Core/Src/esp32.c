@@ -24,7 +24,7 @@ void esp32getIP(void) {
 		HAL_Delay(100); // Longer delay before receiving data to ensure ESP32 is ready
 		// Pulisci i buffer prima della ricezione
 		uint8_t rx_raw[DATA_SIZE + 1] = { 0 }; // Buffer to store received data
-		
+
 		// Utilizza un timeout più lungo (500ms invece di HAL_MAX_DELAY)
 		HAL_StatusTypeDef rx_status = HAL_I2C_Master_Receive(&hi2c1,
 				(I2C_ADDR << 1), rx_raw, DATA_SIZE, 500);
@@ -33,7 +33,7 @@ void esp32getIP(void) {
 		if (rx_status == HAL_OK) {
 			// Assicurati che i dati siano terminati da null
 			rx_raw[DATA_SIZE] = '\0';
-			
+
 			char ip_str[DATA_SIZE + 1] = { 0 }; // Buffer for the IP string (null-terminated)
 
 			// Stampa i dati grezzi ricevuti per debug
@@ -46,7 +46,8 @@ void esp32getIP(void) {
 			// Convert raw data to a printable string
 			int valid_chars = 0;
 			for (int i = 0; i < DATA_SIZE; i++) {
-				if (rx_raw[i] == '\n' || rx_raw[i] == '\r' || rx_raw[i] == '\0') {
+				if (rx_raw[i] == '\n' || rx_raw[i] == '\r'
+						|| rx_raw[i] == '\0') {
 					break; // Stop at newline, carriage return or null
 				}
 				if (isprint(rx_raw[i])) {
@@ -87,7 +88,7 @@ bool is_valid_ip(const char *ip) {
 	if (ip == NULL || strlen(ip) < 7) { // 7 = minimo per un IP valido (1.1.1.1)
 		return false;
 	}
-	
+
 	int num, dots = 0;
 	char *ptr;
 	char ip_copy[32];

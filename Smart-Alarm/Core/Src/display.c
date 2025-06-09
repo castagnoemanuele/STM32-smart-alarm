@@ -42,20 +42,15 @@ void Display_SystemStatus(bool system_armed) {
 	ssd1306_Fill(Black);
 	ssd1306_SetCursor(10, 10);
 	ssd1306_WriteString("System Status:", Font_7x10, White);
-
-	ssd1306_SetCursor(10, 25);
-	if (system_armed) {
+	ssd1306_SetCursor(10, 25);	if (system_armed) {
 		ssd1306_WriteString("ARMED", Font_7x10, White);
-		ssd1306_SetCursor(10, 40);
+		ssd1306_SetCursor(10, 50);
 		ssd1306_WriteString("Press B to disarm", Font_6x8, White);
 	} else {
 		ssd1306_WriteString("DISARMED", Font_7x10, White);
-		ssd1306_SetCursor(10, 40);
+		ssd1306_SetCursor(10, 50);
 		ssd1306_WriteString("Press A to arm", Font_6x8, White);
 	}
-
-	ssd1306_SetCursor(10, 50);
-	ssd1306_WriteString("Press C to set PIN", Font_6x8, White);
 
 	Display_Update();
 }

@@ -13,6 +13,7 @@ typedef struct {
 	bool system_locked;
 	bool system_armed;
 	bool message_sent;
+	bool entering_pin_during_alarm;
 } PincodeState;
 
 void Pincode_Init(PincodeState *state);

@@ -4,16 +4,16 @@
 #include "stm32f4xx_hal.h"
 #include <stdbool.h>
 
-// Costanti e definizioni
+// Constants and definitions
 #define MAX_CONNECTION_ATTEMPTS 3
 #define DATA_SIZE 20
 #define I2C_ADDR 0x5C
 
-// Dichiarazioni delle variabili globali
+// Global Variable Declarations
 extern char device_ip[32];
 extern bool wifi_connected;
 
-// Funzioni
+// Functions
 void esp32getIP(void);
 bool is_valid_ip(const char *ip);
 

@@ -3,6 +3,9 @@
 #include "string.h"
 #include "stdio.h"
 #include "flashMemory.h"
+#include "display.h"
+
+extern void StopAlarm(void); // StopAlarm Function Declaration
 
 /**
  * @brief Initialize the pincode system state.
@@ -20,6 +23,7 @@ void Pincode_Init(PincodeState *state) {
 	state->system_locked = false;
 	state->system_armed = false;
 	state->message_sent = false;
+	state->entering_pin_during_alarm = false;
 }
 
 /**
@@ -33,25 +37,50 @@ void Pincode_Init(PincodeState *state) {
 void Pincode_Check(PincodeState *state) {
 	uint32_t stored_pincode = ReadFromFlash(address1);
 	char stored_pincode_str[PINCODE_LENGTH + 1];
+	extern volatile uint8_t alarm_flag;
 
 	// Convert stored pincode to string with zero-padding
 	snprintf(stored_pincode_str, sizeof(stored_pincode_str), "%04lu",
-			(unsigned long) stored_pincode);
-
-	// Check if entered pincode matches the stored one
+			(unsigned long) stored_pincode); // Check if entered pincode matches the stored one
 	if (strncmp(state->entered_pincode, stored_pincode_str, PINCODE_LENGTH)
 			== 0) {
 		state->pin_attempts = 0;
-		state->system_armed = !state->system_armed;
 
 		// Clear entered pincode and reset position after success
 		memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
 		state->pincode_position = 0;
 
+		// If there is an alarm in progress or we are entering the PIN during an alarm,
+		// we always disarm the system
+		if (alarm_flag || state->entering_pin_during_alarm) {
+			state->system_armed = false;
+			state->entering_pin_during_alarm = false;
+
+			// Debug output to verify that the system is actually disarmed
+			printf(
+					"Correct PIN during alarm: System DISARMED (system_armed = %d)\r\n",
+					state->system_armed);// If there was an alarm going on, stop it
+			if (alarm_flag) {
+				printf("Stopping alarm...\r\n");
+				StopAlarm();
+			}
+		} else {
+			// In all other cases, we invert the system's armed state
+			// (if disarmed we arm it, if armed we disarm it)
+			state->system_armed = !state->system_armed;
+			printf("Correct PIN: System %s (system_armed = %d)\r\n",
+					state->system_armed ? "ARMED" : "DISARMED",
+					state->system_armed);
+		}
+
+		// Show confirmation message
 		Display_AccessGranted();
+		// Always show the system status after checking the PIN
+		printf("Updating display with status: system_armed = %d\r\n",
+				state->system_armed);
 		Display_SystemStatus(state->system_armed);
 
-		// Reset message flag if system is disarmed
+		// Reset message flag when system is disarmed
 		if (!state->system_armed) {
 			state->message_sent = false;
 		}
@@ -73,8 +102,7 @@ void Pincode_Check(PincodeState *state) {
 
 			// Clear entered pincode and reset position for next attempt
 			memset(state->entered_pincode, 0, sizeof(state->entered_pincode));
-			state->pincode_position = 0;
-
+			state->pincode_position = 0;// If we are entering the PIN during an alarm, return to the PIN entry screen
 			Display_EnterPincode(state);
 		}
 	}

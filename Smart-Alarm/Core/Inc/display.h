@@ -19,7 +19,7 @@ void Display_AccessDenied(void);
 void Display_AlarmScreen(bool toggle);
 void Display_Clear(void);
 void Display_Update(void);
-void Display_IPAddress(const char* ip);
+void Display_IPAddress(const char *ip);
 void Display_I2CScanResult(uint8_t address, uint8_t position);
 
 #endif /* DISPLAY_H */

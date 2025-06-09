@@ -18,7 +18,6 @@
  */
 void SaveToFlash(uint32_t data, uint32_t address);
 
-
 /**
  * @brief Reads a 32-bit unsigned integer from flash memory.
  *

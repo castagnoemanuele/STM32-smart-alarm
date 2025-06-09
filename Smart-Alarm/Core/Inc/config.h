@@ -2,7 +2,6 @@
 #define CONFIG_H
 
 /* System Configuration */
-#define ALARM_DURATION_MS 5000
 #define PINCODE_LENGTH 4
 #define MAX_PIN_ATTEMPTS 3
 #define LOCKOUT_TIME_MS 30000
@@ -32,7 +31,7 @@
  |---------------|---------------|-------------------------|
  | VCC           | 3.3V          | Power supply (3.3V)     |
  | GND           | GND           | Ground                  |
- | RST           | PC2          | Reset pin               |
+ | RST           | PC2           | Reset pin               |
  | SDA/CS        | PD2           | Chip Select (SPI CS)    |
  | MOSI          | PC12          | Master Out Slave In     |
  | MISO          | PC11          | Master In Slave Out     |
