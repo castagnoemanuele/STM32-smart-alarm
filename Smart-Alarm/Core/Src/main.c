@@ -69,6 +69,9 @@ uint32_t start_time = 0;
 bool toggle = false;
 bool message_sent = false;
 
+// Main loop timing variables
+uint32_t loop_start_time = 0;
+
 PincodeState pincodeState;
 
 char rx_data[DATA_SIZE];
@@ -193,6 +196,8 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	/* Main loop */
 	while (1) {
+		// Record start time for main loop timing control
+		loop_start_time = HAL_GetTick();
 
 		// Check if system is locked
 		if (pincodeState.system_locked) {
@@ -217,11 +222,12 @@ int main(void) {
 
 		// Check reed switch status
 		HandleReedSwitch();
+
 		// Handle alarm
 		if (alarm_flag) {
 			if (start_time == 0) {
 				start_time = HAL_GetTick();
-				printf("Inizio allarme: start_time = %lu\r\n", start_time);
+				printf("Alarm start: start_time = %lu\r\n", start_time);
 			}
 
 			// Keep buzzer active during alarm (toggle every 100ms)
@@ -241,8 +247,26 @@ int main(void) {
 
 		// Handle PIR
 		HandlePIRMotion();
-
-		//HAL_Delay(100);
+		
+		// Main loop timing control - ensure 250ms cycle time
+		uint32_t loop_execution_time = HAL_GetTick() - loop_start_time;
+		
+		// Print timing information for debugging
+		printf("Loop execution time: %lu ms, Target: %lu ms\r\n", 
+			   loop_execution_time, MAIN_LOOP_PERIOD_MS);
+		
+		if (loop_execution_time > MAIN_LOOP_PERIOD_MS) {
+			printf("WARNING: Loop execution time (%lu ms) exceeded target period (%lu ms)!\r\n", 
+				   loop_execution_time, MAIN_LOOP_PERIOD_MS);
+		} else {
+			uint32_t delay_time = MAIN_LOOP_PERIOD_MS - loop_execution_time;
+			printf("Adding delay: %lu ms to reach 250ms target\r\n", delay_time);
+			HAL_Delay(delay_time);
+		}
+		
+		// Print total loop time after delay
+		uint32_t total_loop_time = HAL_GetTick() - loop_start_time;
+		printf("Total loop time: %lu ms\r\n\r\n", total_loop_time);
 	}
 
 	/* USER CODE END WHILE */

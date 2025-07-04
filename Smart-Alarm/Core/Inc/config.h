@@ -7,6 +7,7 @@
 #define LOCKOUT_TIME_MS 30000
 #define KEY_DEBOUNCE_MS 500
 #define REED_DEBOUNCE_MS 200
+#define MAIN_LOOP_PERIOD_MS 250
 
 //ESP32 Communication related
 #define MAX_CONNECTION_ATTEMPTS 3
