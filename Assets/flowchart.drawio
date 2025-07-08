@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36" version="27.2.0">
   <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
-    <mxGraphModel dx="1558" dy="1723" grid="1" gridSize="13" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="981" dy="1400" grid="1" gridSize="13" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
@@ -298,7 +298,8 @@
         </mxCell>
         <mxCell id="RqIMcXu22zFwznq-mYFB-139" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="RqIMcXu22zFwznq-mYFB-29">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="576" y="1613" as="targetPoint" />
+            <mxPoint x="564" y="1613" as="targetPoint" />
+            <mxPoint x="647" y="1613" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="RqIMcXu22zFwznq-mYFB-29" value="Is pin&amp;nbsp;&lt;div&gt;correct&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
@@ -310,8 +311,14 @@
             <mxPoint x="715" y="2010" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="RqIMcXu22zFwznq-mYFB-142" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="RqIMcXu22zFwznq-mYFB-36" target="RqIMcXu22zFwznq-mYFB-8">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="RqIMcXu22zFwznq-mYFB-207" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;endArrow=classicThin;endFill=1;startArrow=none;startFill=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="RqIMcXu22zFwznq-mYFB-36">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="715" y="1742" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="598" y="1951" />
+              <mxPoint x="598" y="1742" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="RqIMcXu22zFwznq-mYFB-36" value="Are sensors&amp;nbsp;&lt;div&gt;triggered&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="655" y="1921.5" width="120" height="60" as="geometry" />
