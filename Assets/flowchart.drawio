@@ -745,7 +745,7 @@
           <mxGeometry x="39" y="1469" width="234" height="663" as="geometry" />
         </mxCell>
         <mxCell id="dvoiycr84gdobLwXYIdb-4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;opacity=40;fontSize=17;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="286" y="1469" width="260" height="663" as="geometry" />
+          <mxGeometry x="299" y="1469" width="247" height="663" as="geometry" />
         </mxCell>
         <mxCell id="dvoiycr84gdobLwXYIdb-5" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;opacity=40;fontSize=17;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="554.5" y="1469" width="251" height="325" as="geometry" />
@@ -754,7 +754,7 @@
           <mxGeometry x="39" y="1465" width="117" height="39" as="geometry" />
         </mxCell>
         <mxCell id="dvoiycr84gdobLwXYIdb-7" value="Activation and run" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=17;fontStyle=1" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="279.5" y="1465" width="169" height="39" as="geometry" />
+          <mxGeometry x="299" y="1465" width="169" height="39" as="geometry" />
         </mxCell>
         <mxCell id="dvoiycr84gdobLwXYIdb-8" value="Deactivation" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=17;fontStyle=1" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="552.5" y="1465" width="117" height="39" as="geometry" />
